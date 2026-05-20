@@ -23,7 +23,7 @@ data/processed/features/*
 !data/processed/features/.gitkeep
 
 models/yolo/*
-!models/yolo/.gitkeep
+!models/yolo/best.pt
 
 models/ml/*
 !models/ml/.gitkeep
