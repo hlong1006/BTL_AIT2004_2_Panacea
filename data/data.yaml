@@ -3,6 +3,6 @@ names:
 - RBC
 - WBC
 nc: 3
-test: C:\Users\MUHAMMAD NOUKHEZ\Dropbox\Noukhej-AFM\Datasets\BCCD\test\images
-train: C:\Users\MUHAMMAD NOUKHEZ\Dropbox\Noukhej-AFM\Datasets\BCCD\train\images
-val: C:\Users\MUHAMMAD NOUKHEZ\Dropbox\Noukhej-AFM\Datasets\BCCD\valid\images
+test: D:\24022390\BTL_AIT2004_2_Panacea\data\test
+train: D:\24022390\BTL_AIT2004_2_Panacea\data\train
+val: D:\24022390\BTL_AIT2004_2_Panacea\data\valid
