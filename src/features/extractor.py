@@ -5,13 +5,25 @@ import numpy as np
 
 
 class CellFeatureExtractor:
+    MIN_SIZE = 10  # Minimum image size to process
+    
     @staticmethod
     def _make_mask(cell_bgr: np.ndarray) -> np.ndarray:
-        gray = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-        return mask
+        # Validate image size
+        h, w = cell_bgr.shape[:2]
+        if h < CellFeatureExtractor.MIN_SIZE or w < CellFeatureExtractor.MIN_SIZE:
+            # Return empty mask for small images
+            return np.zeros((h, w), dtype=np.uint8)
+        
+        try:
+            gray = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY)
+            blur = cv2.GaussianBlur(gray, (5, 5), 0)
+            _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+            return mask
+        except Exception as e:
+            print(f"[WARN] Error creating mask: {e}")
+            return np.zeros(cell_bgr.shape[:2], dtype=np.uint8)
 
     def extract(self, cell_bgr: np.ndarray) -> Dict[str, float]:
         mask = self._make_mask(cell_bgr)

@@ -25,7 +25,7 @@ class MLClassifier:
         if target_col not in df.columns:
             raise ValueError(f"Missing target column '{target_col}' in {csv_path}")
 
-        x = df.drop(columns=[target_col])
+        x = df.drop(columns=[target_col, "image_name"])
         y = df[target_col]
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, stratify=y, random_state=42)
 
@@ -63,3 +63,4 @@ class MLClassifier:
     def predict(model, rows: List[Dict[str, float]]) -> List[str]:
         df = pd.DataFrame(rows)
         return model.predict(df).tolist()
+
