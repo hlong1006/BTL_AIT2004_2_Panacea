@@ -1,12 +1,5 @@
 #  Hybrid Cell Detection & Classification Pipeline
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/YOLOv8-Object%20Detection-FF6F00?style=for-the-badge&logo=pytorch&logoColor=white" />
-  <img src="https://img.shields.io/badge/OpenCV-Feature%20Extraction-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" />
-  <img src="https://img.shields.io/badge/Scikit--Learn-ML%20Classifier-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
-</p>
 
 > **Pipeline AI Lai (Hybrid)** tự động phát hiện, đếm và phân loại tế bào trong ảnh vi thể — kết hợp tốc độ của Deep Learning với tính giải thích được của Machine Learning cổ điển.
 
@@ -238,8 +231,8 @@ Sau khi inference, thư mục `outputs/` sẽ chứa:
 ```
 cell_id | area | perimeter | mean_r | mean_g | mean_b | lbp_hist | predicted_label
 --------|------|-----------|--------|--------|--------|----------|----------------
-cell_01 | 1523 | 142.3      | 210    | 180    | 175    | [...]    | normal
-cell_02 | 2841 | 198.7      | 145    | 110    | 160    | [...]    | cancer
+cell_01 | 1523 | 142.3     | 210    | 180    | 175    | [...]    | normal
+cell_02 | 2841 | 198.7     | 145    | 110    | 160    | [...]    | cancer
 ```
 
 ---
@@ -263,7 +256,3 @@ cell_02 | 2841 | 198.7      | 145    | 110    | 160    | [...]    | cancer
 
 ---
 
-<p align="center">
-  Dự án được phát triển trong khuôn khổ môn học <b>Trí tuệ nhân tạo ứng dụng</b><br/>
-  © 2025 — Nhóm [Tên nhóm]
-</p>
