@@ -1,81 +1,144 @@
 # Hybrid Cell Detection & Classification
 
-Du an nay trien khai pipeline lai (Hybrid AI) gom 3 module:
+Pipeline lai (Hybrid AI) gom 3 buoc:
 
-1. **Object Detection (DL/YOLO):** Phat hien va khoanh vung te bao trong anh vi the.
-2. **Feature Extraction (OpenCV):** Trich xuat dac trung hinh thai, mau sac, ket cau tu tung crop.
-3. **Pathology Classification (ML):** Phan loai dua tren bang dac trung bang KNN / Decision Tree / SVM.
+1. **YOLO** — phat hien va khoanh vung te bao
+2. **OpenCV** — trich xuat dac trung hinh thai / mau / ket cau
+3. **ML (KNN / Decision Tree / SVM)** — phan loai Platelets, RBC, WBC
 
 ## Cau truc thu muc
 
 ```text
 .
 |-- data/
-|   |-- raw/images/            # Them anh goc vao day
-|   |-- raw/labels/            # Them nhan/annotation (neu can train YOLO)
-|   |-- interim/crops/         # Crop te bao sinh ra tu module detect
-|   `-- processed/features/    # Feature csv cho train/predict
+|   |-- train|valid|test/     # Anh + nhan YOLO
+|   `-- processed/features/   # train_features.csv
 |-- models/
-|   |-- yolo/                  # Dat best.pt
-|   `-- ml/                    # Luu model ML .joblib
-|-- scripts/
-|   |-- extract_features_from_crops.py
-|   |-- train_ml.py
-|   `-- infer_image.py
-|-- src/
-|   |-- detection/yolo_detector.py
-|   |-- features/extractor.py
-|   |-- classification/ml_classifier.py
-|   `-- pipeline/end_to_end.py
-`-- requirements.txt
+|   |-- yolo/best.pt          # Model detection (YOLO)
+|   `-- ml/best_ml_model.pt   # Model classification (PyTorch .pt)
+|-- scripts/                  # Script chay pipeline
+|-- outputs/                  # Ket qua suy luan
+`-- src/                      # Source code chinh
 ```
 
-## Cai dat
+## 1. Cai dat
 
-```bash
+Mo terminal tai thu muc project:
+
+```powershell
+cd D:\BTL_AIT2004_2_Panacea
+
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-## Quy trinh su dung
+Moi lan mo terminal moi, chay lai:
 
-### B1) Chuan bi data
-
-- Ban them anh te bao vao `data/raw/images/`.
-- Neu co train YOLO thi them annotation vao `data/raw/labels/` va train tren Kaggle, sau do copy `best.pt` vao `models/yolo/best.pt`.
-
-### B2) Tao bang feature de train ML
-
-Neu ban da co crop te bao:
-
-```bash
-python scripts/extract_features_from_crops.py --crops-dir data/interim/crops --output-csv data/processed/features/train_features.csv --label normal
+```powershell
+cd D:\BTL_AIT2004_2_Panacea
+.\.venv\Scripts\Activate.ps1
+$env:PYTHONPATH = (Get-Location).Path
 ```
 
-> Ghi chu: voi bai toan nhieu lop, ban chay script nhieu lan theo tung nhan roi merge csv.
+## 2. Chuan bi model YOLO (da train xong)
 
-### B3) Train mo hinh ML
+Copy `best.pt` vao `models/yolo/`:
 
-`train_features.csv` can co cot `label`.
+```powershell
+New-Item -ItemType Directory -Force -Path models\yolo | Out-Null
+Copy-Item runs\cell_detect\weights\best.pt models\yolo\best.pt
+```
 
-```bash
+> Neu file da co san trong `models/yolo/best.pt` thi bo qua buoc nay.
+
+## 3. Train model ML (luu file `.pt`)
+
+### Buoc 3a — Tao file dac trung `train_features.csv`
+
+```powershell
+python scripts/build_train_features_from_labels.py
+```
+
+Hoac gop buoc 3a + 3b:
+
+```powershell
+python scripts/run_ml_pipeline.py
+```
+
+### Buoc 3b — Train va luu `models/ml/best_ml_model.pt`
+
+```powershell
 python scripts/train_ml.py
 ```
 
-Model tot nhat duoc luu tai `models/ml/best_ml_model.joblib`.
+Ket qua: so sanh KNN / Decision Tree / SVM, chon model tot nhat, luu dang **PyTorch checkpoint** (`.pt`) kem danh sach cot feature.
 
-### B4) Chay suy luan end-to-end
+## 4. Chay suy luan (end-to-end)
 
-```bash
-python scripts/infer_image.py --image data/raw/images/sample.png --output outputs/prediction.png --feature-csv outputs/predicted_features.csv
+### Mot anh
+
+```powershell
+python scripts/infer_image.py `
+  --image data/test/images/BloodImage_00038_jpg.rf.ffa23e4b5b55b523367f332af726eae8.jpg `
+  --output outputs/prediction.png `
+  --feature-csv outputs/predicted_features.csv
 ```
 
-Ket qua:
-- Anh da ve bounding box + nhan du doan: `outputs/prediction.png`
-- Bang dac trung + du doan tung te bao: `outputs/predicted_features.csv`
+### Full folder (tat ca anh — khong can go tung anh)
 
-## Luu y quan trong
+```powershell
+python scripts/infer_folder.py
+```
 
-- Neu chua co `best.pt`, he thong se fallback: xem toan bo anh la 1 object de test pipeline.
-- De dat hieu nang tot trong y te, nen train YOLO rieng theo bo du lieu cua ban (Kaggle GPU), va tune bo feature + model ML theo task thuc te.
+Mac dinh doc `data/test/images/`, ket qua:
+
+| Output | Noi dung |
+|--------|----------|
+| `outputs/predictions/*.png` | Anh co bbox + nhan tung te bao |
+| `outputs/features/*.csv` | Dac trung + nhan tung cell moi anh |
+| `outputs/summary.csv` | Tong hop: so luong Platelets / RBC / WBC moi anh |
+
+Chay folder khac (vd. valid):
+
+```powershell
+python scripts/infer_folder.py --images-dir data/valid/images
+```
+
+Tham so tuy chon:
+
+| Tham so | Mac dinh | Mo ta |
+|---------|----------|-------|
+| `--image` | (bat buoc) | Duong dan anh dau vao |
+| `--output` | `outputs/prediction.png` | Anh co bbox + nhan |
+| `--feature-csv` | `outputs/predicted_features.csv` | CSV dac trung + du doan |
+| `--yolo-model` | `models/yolo/best.pt` | Model YOLO |
+| `--ml-model` | `models/ml/best_ml_model.pt` | Model ML |
+
+**Ket qua:**
+
+- `outputs/prediction.png` — anh da ve khung + nhan (Platelets / RBC / WBC)
+- `outputs/predicted_features.csv` — bang dac trung va nhan du doan tung te bao
+
+## 5. Tom tat lenh (copy nhanh)
+
+```powershell
+cd D:\BTL_AIT2004_2_Panacea
+.\.venv\Scripts\Activate.ps1
+$env:PYTHONPATH = (Get-Location).Path
+
+# Train ML (khong train YOLO)
+python scripts/run_ml_pipeline.py
+
+# Suy luan TAT CA anh trong folder test
+python scripts/infer_folder.py
+
+# Hoac chi 1 anh
+python scripts/infer_image.py --image data/test/images/<ten-anh>.jpg
+```
+
+## Luu y
+
+- Model ML luu dang `.pt` (PyTorch), khong dung `.joblib`.
+- Neu thieu `models/yolo/best.pt`, pipeline van chay nhung chi detect 1 vung (fallback toan anh).
+- Dataset da co san trong `data/train`, `data/valid`, `data/test` (din dang YOLO).

@@ -16,7 +16,7 @@ class HybridCellPipeline:
         ensure_dirs([PATHS.interim_crops, PATHS.processed_features])
         self.detector = YoloDetector(yolo_model_path)
         self.extractor = CellFeatureExtractor()
-        self.ml_model = MLClassifier.load_model(ml_model_path)
+        self.ml_checkpoint = MLClassifier.load_model(ml_model_path)
 
     def run_on_image(self, image_path: Path, output_image_path: Path, save_feature_csv: Optional[Path] = None) -> Path:
         image = cv2.imread(str(image_path))
@@ -33,7 +33,7 @@ class HybridCellPipeline:
             features["det_confidence"] = det.confidence
             feature_rows.append(features)
 
-        labels = MLClassifier.predict(self.ml_model, feature_rows) if feature_rows else []
+        labels = MLClassifier.predict(self.ml_checkpoint, feature_rows) if feature_rows else []
         rendered = self.detector.draw_detections(image, detections, labels)
 
         output_image_path.parent.mkdir(parents=True, exist_ok=True)

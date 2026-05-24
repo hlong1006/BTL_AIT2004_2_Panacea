@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+from src.classification.ml_classifier import ML_MODEL_FILENAME
 from src.config.settings import PATHS
 from src.pipeline.end_to_end import HybridCellPipeline
 
@@ -24,7 +25,7 @@ def parse_args():
     parser.add_argument(
         "--ml-model",
         type=Path,
-        default=PATHS.ml_models / "best_ml_model.joblib",
+        default=PATHS.ml_models / ML_MODEL_FILENAME,
         help="Path to trained ML classifier",
     )
     return parser.parse_args()

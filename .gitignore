@@ -27,3 +27,4 @@ models/yolo/*
 
 models/ml/*
 !models/ml/.gitkeep
+!models/ml/best_ml_model.pt

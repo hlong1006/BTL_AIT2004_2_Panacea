@@ -1,8 +1,10 @@
-names:
-- Platelets
-- RBC
-- WBC
+path: D:/BTL_AIT2004_2_Panacea/data
+train: train/images
+val: valid/images
+test: test/images
+
 nc: 3
-test: D:\24022390\BTL_AIT2004_2_Panacea\data\test
-train: D:\24022390\BTL_AIT2004_2_Panacea\data\train
-val: D:\24022390\BTL_AIT2004_2_Panacea\data\valid
+names:
+  - Platelets
+  - RBC
+  - WBC
