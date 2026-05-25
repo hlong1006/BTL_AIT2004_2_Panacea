@@ -29,7 +29,6 @@
 | Cần mô hình nhẹ, dễ giải thích | Vector đặc trưng OpenCV → ML cổ điển |
 | Phân loại loại tế bào | 3 lớp: **Platelets**, **RBC**, **WBC** |
 
-> **Lưu ý:** ML trong project phân loại **loại tế bào** (RBC / WBC / Platelets), **không** phải chẩn đoán ung thư máu (normal/cancer). Nếu cần bài toán ung thư, phải bổ sung dataset và nhãn lớp mới.
 
 ---
 
