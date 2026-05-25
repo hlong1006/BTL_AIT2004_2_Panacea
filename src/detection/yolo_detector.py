@@ -78,13 +78,34 @@ class YoloDetector:
         y2 = max(1, min(det.y2, h))
         return image[y1:y2, x1:x2]
 
+    # BGR — màu tương phản trên nền lam máu (hồng/nhạt)
+    CLASS_COLORS_BGR = {
+        "Platelets": (0, 165, 255),   # cam
+        "RBC": (0, 0, 255),           # đỏ
+        "WBC": (255, 80, 0),          # xanh dương đậm
+        "cell": (0, 255, 255),        # vàng (fallback)
+    }
+
+    @staticmethod
+    def _color_for_class(class_name: str) -> tuple[int, int, int]:
+        return YoloDetector.CLASS_COLORS_BGR.get(class_name, (0, 255, 255))
+
+    @staticmethod
+    def _draw_label(image: np.ndarray, text: str, x: int, y: int, color: tuple[int, int, int]) -> None:
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 0.55
+        thickness = 2
+        (tw, th), baseline = cv2.getTextSize(text, font, scale, thickness)
+        top = max(th + 6, y)
+        cv2.rectangle(image, (x, top - th - 8), (x + tw + 6, top + baseline + 2), color, -1)
+        cv2.putText(image, text, (x + 3, top), font, scale, (255, 255, 255), thickness, cv2.LINE_AA)
+
     @staticmethod
     def draw_detections(image: np.ndarray, detections: List[Detection], labels: Optional[List[str]] = None) -> np.ndarray:
         output = image.copy()
         for i, det in enumerate(detections):
-            cv2.rectangle(output, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 2)
-            text = det.class_name
-            if labels and i < len(labels):
-                text = f"{text} | {labels[i]}"
-            cv2.putText(output, text, (det.x1, max(0, det.y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            label = labels[i] if labels and i < len(labels) else det.class_name
+            color = YoloDetector._color_for_class(label)
+            cv2.rectangle(output, (det.x1, det.y1), (det.x2, det.y2), color, 3)
+            YoloDetector._draw_label(output, label, det.x1, max(0, det.y1 - 6), color)
         return output
