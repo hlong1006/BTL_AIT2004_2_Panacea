@@ -1,10 +1,31 @@
-# Hybrid Cell Detection & Classification
+# 🩺 Hybrid Cell Detection & Classification System
 
-> Pipeline **AI lai (Hybrid)** phát hiện, đếm và phân loại tế bào trên ảnh vi thể lam máu — kết hợp **YOLO (Deep Learning)** với **đặc trưng OpenCV + ML cổ điển (KNN / Decision Tree / SVM)**.
+> **Pipeline AI lai (Hybrid)** phát hiện, đếm và phân loại tế bào trên ảnh vi thể lam máu — kết hợp **YOLOv8 (Deep Learning)** với **đặc trưng OpenCV + ML cổ điển (KNN / Decision Tree / SVM)**.
 
 ---
 
-## Mục lục
+## 🚀 Quick Start (Bắt đầu nhanh)
+
+### Single Image (Phân tích một ảnh)
+```bash
+python app.py --image sample.png --output results/
+```
+
+### Batch Processing (Xử lý hàng loạt)
+```bash
+python app.py --folder ./images --output results/ --recursive
+```
+
+### With Detailed Reports (Với báo cáo chi tiết)
+```bash
+python app.py --image sample.png --output results/ --verbose
+```
+
+Xem thêm: [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md) (Hướng dẫn đầy đủ)
+
+---
+
+## 📋 Mục lục
 
 - [Đặt vấn đề](#đặt-vấn-đề)
 - [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
@@ -12,6 +33,7 @@
 - [Cài đặt](#cài-đặt)
 - [Quy trình sử dụng](#quy-trình-sử-dụng)
 - [Kết quả đầu ra](#kết-quả-đầu-ra)
+- [🆕 Tính năng mới](#tính-năng-mới---new-features)
 - [Lưu ý kỹ thuật](#lưu-ý-kỹ-thuật)
 - [Nhóm phát triển](#nhóm-phát-triển)
 
@@ -28,48 +50,73 @@
 | Phát hiện hàng trăm tế bào / ảnh | YOLOv8 localize tự động |
 | Cần mô hình nhẹ, dễ giải thích | Vector đặc trưng OpenCV → ML cổ điển |
 | Phân loại loại tế bào | 3 lớp: **Platelets**, **RBC**, **WBC** |
-
+| Báo cáo chi tiết cho bác sĩ | **🆕 Thống kê + Cảnh báo tự động** |
 
 ---
 
 ## Kiến trúc hệ thống
 
 ```
-Ảnh vi thể gốc
-      │
-      ▼
-┌─────────────────────────────┐
-│  MODULE 1: Object Detection │  ← YOLOv8 (models/yolo/best.pt)
-│  Phát hiện & bounding box   │
-└─────────────┬───────────────┘
-              │  crop từng tế bào
-              ▼
-┌─────────────────────────────┐
-│  MODULE 2: Feature Extract  │  ← OpenCV
-│  Hình thái · Màu sắc · Texture│
-└─────────────┬───────────────┘
-              │  vector 10 đặc trưng
-              ▼
-┌─────────────────────────────┐
-│  MODULE 3: ML Classifier    │  ← KNN / DT / SVM (best_ml_model.pt)
-│  Platelets / RBC / WBC      │
-└─────────────┬───────────────┘
-              │
-              ▼
-   Ảnh có nhãn màu + CSV báo cáo
+┌──────────────────────────────────┐
+│  Ảnh vi thể gốc (JPG/PNG)        │
+└────────────┬─────────────────────┘
+             ↓
+┌────────────────────────────────────┐
+│  MODULE 1: YOLOv8 Detection        │
+│  • Phát hiện tế bào                │
+│  • Bounding box                    │
+│  → Output: Coordinates + Confidence│
+└────────────┬─────────────────────┘
+             ↓
+┌────────────────────────────────────┐
+│  MODULE 2: OpenCV Feature Extract  │
+│  • Crop từng tế bào                │
+│  • 10 đặc trưng hình thái, màu     │
+│  → Output: Feature Vector          │
+└────────────┬─────────────────────┘
+             ↓
+┌────────────────────────────────────┐
+│  MODULE 3: ML Classification       │
+│  • KNN / Decision Tree / SVM       │
+│  → Output: RBC / WBC / Platelets   │
+└────────────┬─────────────────────┘
+             ↓
+┌────────────────────────────────────┐
+│  MODULE 4: 🆕 Statistics & Reports │
+│  • Đếm + Phần trăm                 │
+│  • Cảnh báo lâm sàng                │
+│  • Multi-format export (CSV/JSON)  │
+└────────────┬─────────────────────┘
+             ↓
+┌────────────────────────────────────┐
+│  📤 OUTPUT                          │
+│  • Ảnh: Bounding box + Nhãn màu    │
+│  • Text Report: Chi tiết + Cảnh báo│
+│  • CSV: Thống kê                    │
+│  • JSON: Dữ liệu đầy đủ             │
+│  • XLSX: Excel báo cáo              │
+│  • Features CSV: Từng tế bào        │
+└────────────────────────────────────┘
 ```
 
-**10 đặc trưng trích từ mỗi crop:**
+**10 đặc trưng trích từ mỗi cell:**
 
-`area`, `perimeter`, `circularity`, `mean_b/g/r`, `mean_h/s/v`, `texture_laplacian_var`
+```
+area            — Diện tích (pixels²)
+perimeter       — Chu vi (pixels)
+circularity     — Độ tròn (0-1, 1=tròn hoàn hảo)
+mean_b/g/r      — Màu sắc RGB trung bình
+mean_h/s/v      — Màu sắc HSV trung bình
+texture_laplacian_var — Độ xốc textur
+```
 
 **Màu khung trên ảnh kết quả:**
 
-| Loại | Màu |
-|------|-----|
-| RBC | Đỏ |
-| WBC | Xanh dương |
-| Platelets | Cam |
+| Loại | Màu | RGB |
+|------|-----|-----|
+| 🔴 RBC | Đỏ | (0, 0, 255) |
+| 🔵 WBC | Xanh dương | (255, 80, 0) |
+| 🟠 Platelets | Cam | (0, 165, 255) |
 
 ---
 
@@ -77,53 +124,82 @@
 
 ```
 .
+├── 📄 app.py                   # 🆕 Main application (giao diện chính)
+├── 📄 README.md                # This file
+├── 📄 SYSTEM_GUIDE.md          # 🆕 Hướng dẫn đầy đủ + API examples
+│
 ├── data/
-│   ├── train/                 # Ảnh + nhãn YOLO (train)
-│   ├── valid/                 # Ảnh + nhãn YOLO (valid)
-│   ├── test/                  # Ảnh + nhãn YOLO (test)
-│   ├── data.yaml              # Cấu hình lớp: Platelets, RBC, WBC
-│   └── processed/features/
-│       └── train_features.csv # CSV đặc trưng (sau build, có thể gitignore)
+│   ├── train/                 # YOLO train data
+│   ├── valid/                 # YOLO validation data
+│   ├── test/                  # Test images
+│   ├── interim/crops/         # Temp cell crops
+│   └── processed/features/    # Feature CSV
 │
 ├── models/
-│   ├── yolo/best.pt           # Trọng số YOLO (đã train)
-│   └── ml/best_ml_model.pt    # Model ML (PyTorch checkpoint)
+│   ├── yolo/best.pt           # YOLOv8 weights
+│   └── ml/best_ml_model.pt    # ML classifier
 │
-├── src/
-│   ├── detection/yolo_detector.py
-│   ├── features/extractor.py
-│   ├── classification/ml_classifier.py
-│   └── pipeline/end_to_end.py
+├── src/                        # 🆕 Enhanced source code
+│   ├── detection/
+│   │   └── yolo_detector.py   # YOLO detection + drawing
+│   │
+│   ├── features/
+│   │   └── extractor.py       # OpenCV feature extraction
+│   │
+│   ├── classification/
+│   │   └── ml_classifier.py   # ML models (KNN/DT/SVM)
+│   │
+│   ├── pipeline/
+│   │   └── end_to_end.py      # 🆕 Enhanced end-to-end pipeline
+│   │
+│   ├── config/
+│   │   └── settings.py        # Configuration paths
+│   │
+│   └── utils/
+│       ├── io.py
+│       └── statistics.py      # 🆕 Statistics + reporting
 │
 ├── scripts/
-│   ├── build_train_features_from_labels.py  # Tạo train_features.csv từ nhãn GT
-│   ├── run_ml_pipeline.py                   # Build features + train ML
-│   ├── train_ml.py
-│   ├── infer_image.py                       # Suy luận 1 ảnh
-│   ├── infer_folder.py                      # Suy luận cả folder
-│   ├── extract_features_from_crops.py       # (tùy chọn) từ thư mục crop có sẵn
-│   └── generate_crops_from_detections.py
+│   ├── infer_image.py         # 🆕 Single image with full reports
+│   ├── infer_folder.py        # 🆕 Batch processing
+│   ├── train_ml.py            # Train ML model
+│   ├── run_ml_pipeline.py     # End-to-end ML pipeline
+│   └── ... (others)
 │
-├── outputs/                   # Kết quả inference (tự sinh)
-├── notebooks/                 # Notebook 02–05 (YOLO, feature, ML, tích hợp)
-├── runs/                      # Log train YOLO (không cần commit)
-└── requirements.txt
+├── notebooks/
+│   ├── 02_Train_YOLO_Detection.ipynb
+│   ├── 03_Feature_Extraction.ipynb
+│   ├── 04_Train_ML_Classification.ipynb
+│   └── 05_Integration_Pipeline.ipynb
+│
+├── outputs/
+│   └── batch_results/         # 🆕 Batch processing results
+│       ├── images/            # Annotated images
+│       ├── reports/           # Individual reports
+│       └── consolidated/      # 🆕 Batch summary
+│
+├── requirements.txt           # Dependencies
+└── yolov8n.pt                # Base YOLO model
 ```
 
 ---
 
 ## Cài đặt
 
-**Yêu cầu:** Python 3.10+, RAM ≥ 8 GB. GPU chỉ cần khi train lại YOLO (vd. Kaggle).
+**Yêu cầu:** Python 3.8+, RAM ≥ 8 GB. GPU tùy chọn.
 
-```powershell
+```bash
+# 1. Clone/Download project
 cd D:\BTL_AIT2004_2_Panacea
 
+# 2. Create virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1  # Windows PowerShell
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# Bắt buộc mỗi lần chạy script
+# 4. Set PYTHONPATH (each session)
 $env:PYTHONPATH = (Get-Location).Path
 ```
 
@@ -131,98 +207,208 @@ $env:PYTHONPATH = (Get-Location).Path
 
 ## Quy trình sử dụng
 
-### Bước 0 — Model YOLO (đã có sẵn)
+### Bước 0 — Chuẩn bị Model (chỉ làm 1 lần)
 
-Nếu chưa có `models/yolo/best.pt`, copy từ thư mục train:
+Ensure `models/yolo/best.pt` exists:
 
-```powershell
-New-Item -ItemType Directory -Force -Path models\yolo | Out-Null
-Copy-Item runs\cell_detect\weights\best.pt models\yolo\best.pt
+```bash
+# If training YOLO for the first time:
+# Use notebooks/02_Train_YOLO_Detection.ipynb on Kaggle GPU
+# Then copy best.pt to models/yolo/
+
+# Or fallback: system will use full image if YOLO model missing
 ```
-
-> Thiếu `best.pt` → pipeline fallback: coi **cả ảnh** là 1 object (chỉ để test).
 
 ---
 
-### Bước 1 — Train ML (chỉ cần làm 1 lần, hoặc khi đổi data)
+### Bước 1 — Train ML Model (chỉ cần 1 lần)
 
-**Cách 1 — Gộp 2 bước:**
-
-```powershell
+```bash
+# All-in-one (recommended)
 python scripts/run_ml_pipeline.py
+
+# Or step-by-step:
+python scripts/build_train_features_from_labels.py  # Extract features
+python scripts/train_ml.py                          # Train & select best model
 ```
 
-**Cách 2 — Từng bước:**
-
-```powershell
-# 1) Crop từ nhãn GT (train + valid) -> train_features.csv
-python scripts/build_train_features_from_labels.py
-
-# 2) Train KNN / DT / SVM, lưu best_ml_model.pt
-python scripts/train_ml.py
-```
-
-Script train in classification report và chọn model tốt nhất (thường **SVM**).
+Output: `models/ml/best_ml_model.pt`
 
 ---
 
-### Bước 2 — Suy luận (đã có model thì chỉ cần bước này)
+### Bước 2 — Inference / Phân tích
 
-**Cả folder test (mặc định `data/test/images`):**
+#### 🆕 Using Main App (Recommended)
 
-```powershell
-python scripts/infer_folder.py
+**Single image:**
+```bash
+python app.py --image data/test/images/sample.png --output results/
 ```
 
-**Một ảnh:**
-
-```powershell
-python scripts/infer_image.py `
-  --image data/test/images/BloodImage_00038_jpg.rf.ffa23e4b5b55b523367f332af726eae8.jpg `
-  --output outputs/prediction.png `
-  --feature-csv outputs/predicted_features.csv
+**Batch processing:**
+```bash
+python app.py --folder data/test/images --output results/ --recursive
 ```
 
-**Folder khác (vd. valid):**
+**With detailed output:**
+```bash
+python app.py --image sample.png --output results/ --verbose
+```
 
-```powershell
-python scripts/infer_folder.py --images-dir data/valid/images
+#### Traditional Scripts
+
+**Single image:**
+```bash
+python scripts/infer_image.py \
+  --image data/test/images/sample.png \
+  --output outputs/prediction.png \
+  --reports outputs/reports/
+```
+
+**Batch:**
+```bash
+python scripts/infer_folder.py \
+  --images-dir data/test/images \
+  --output-dir outputs/batch_results
 ```
 
 ---
 
-## Kết quả đầu ra
+## 📤 Kết quả đầu ra
 
-### Suy luận 1 ảnh (`infer_image.py`)
-
-| File | Mô tả |
-|------|-------|
-| `outputs/prediction.png` | Ảnh có bbox màu + nhãn từng tế bào |
-| `outputs/predicted_features.csv` | Đặc trưng + `predicted_label` mỗi cell |
-
-### Suy luận folder (`infer_folder.py`)
-
-| File / thư mục | Mô tả |
-|----------------|-------|
-| `outputs/predictions/*.png` | Ảnh kết quả từng file |
-| `outputs/features/*.csv` | Chi tiết từng tế bào mỗi ảnh |
-| `outputs/summary.csv` | Tổng hợp đếm: `total_cells`, `platelets`, `rbc`, `wbc` / ảnh |
-
-**Ví dụ `summary.csv`:**
+### Output Structure
 
 ```
-image,total_cells,platelets,rbc,wbc
-BloodImage_00038_....jpg,12,1,10,1
+outputs/
+├── analysis_results/
+│   ├── images/                      # Annotated PNG
+│   │   └── sample_annotated.png
+│   │
+│   ├── reports/                     # Individual reports
+│   │   └── sample/
+│   │       ├── sample_report.txt    # Text report
+│   │       ├── sample_summary.csv   # Summary table
+│   │       ├── sample_report.json   # Full JSON
+│   │       ├── sample_report.xlsx   # Excel
+│   │       └── sample_features.csv  # Per-cell details
+│   │
+│   └── consolidated/                # 🆕 Batch summary
+│       ├── batch_summary.csv
+│       ├── batch_report.json
+│       ├── batch_report.txt
+│       └── batch_report.xlsx
+```
+
+### 🆕 Report Formats
+
+| Format | File | Use Case |
+|--------|------|----------|
+| 🖼️ Image | `*_annotated.png` | Visual inspection |
+| 📄 Text | `*_report.txt` | Human-readable summary |
+| 📊 CSV | `*_summary.csv` | Import to Excel/BI |
+| 📋 JSON | `*_report.json` | Programmatic access |
+| 📑 Excel | `*_report.xlsx` | Professional reports |
+| 🔬 Features | `*_features.csv` | Detailed cell data |
+
+### Example Report (Text)
+
+```
+======================================================================
+BLOOD CELL ANALYSIS REPORT
+======================================================================
+
+Sample: blood_sample_001
+
+Total Cells Detected: 34
+
+----------------------------------------------
+CELL COUNT SUMMARY
+----------------------------------------------
+
+RBC           | 28 | 82.35% | ██████████████████████████████░░░░░░░░░░░
+WBC           |  2 |  5.88% | ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Platelets     |  4 | 11.76% | ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+⚠️ CLINICAL ALERTS
+----------------------------------------------
+None. All values within normal range.
+
+======================================================================
+```
+
+---
+
+## 🆕 Tính năng mới - New Features
+
+### ✨ Statistics & Reporting Module
+
+```python
+from src.utils.statistics import StatisticsCalculator, CellStatistics
+
+# Calculate statistics
+stats = StatisticsCalculator.calculate_statistics(labels, features_df)
+
+# Generate text report
+report = StatisticsCalculator.generate_report_text(stats, "sample_001")
+
+# Export in multiple formats
+ReportExporter.to_csv(stats, "summary.csv")
+ReportExporter.to_json(stats, "report.json")
+ReportExporter.to_excel(stats, features_df, "report.xlsx")
+```
+
+### 🔔 Automatic Clinical Alerts
+
+System generates warnings for abnormal values:
+
+```
+✓ RBC low      → Possible anemia
+✗ WBC high     → Possible infection
+✗ WBC critically low → Severe immunosuppression
+⚠️  Platelets high/low → Thrombocytosis/Thrombocytopenia
+⚠️  Very few cells → May need re-scan
+⚠️  Too many cells → Possible over-segmentation
+```
+
+### 📊 Batch Processing with Consolidated Reports
+
+```bash
+python app.py --folder ./images --output results/ --recursive
+
+# Output:
+# ✓ Individual reports per image
+# ✓ Consolidated batch summary
+# ✓ Statistics aggregation
+# ✓ Single dashboard view
+```
+
+### 🎨 Enhanced Visualization
+
+- Color-coded bounding boxes per cell type
+- Text labels with confidence scores
+- Batch summary with charts (in Excel)
+
+### 🔧 Full API Access
+
+```python
+from app import BloodCellAnalysisApp
+
+app = BloodCellAnalysisApp(verbose=True)
+result = app.analyze_image(Path("sample.png"), Path("results/"))
+
+print(f"Total cells: {result['total_cells']}")
+print(f"Cell types: {result['cell_counts']}")
+print(f"Warnings: {result['warnings']}")
 ```
 
 ---
 
 ## Lưu ý kỹ thuật
 
-- **Train ML** dùng crop từ **nhãn ground-truth**; **inference** dùng crop từ **bbox YOLO** — nếu YOLO miss/sai box, độ chính xác pipeline có thể thấp hơn số trên CSV train.
-- YOLO đã train `nc=3` (vừa detect vừa dự đoán lớp); ML phân loại lại độc lập từ đặc trưng → phù hợp mô tả hybrid (DL định vị + ML giải thích từ feature).
-- Train lại YOLO: dùng notebook `notebooks/02_Train_YOLO_Detection.ipynb` trên Kaggle GPU, sau đó copy `best.pt` về `models/yolo/`.
-- Không commit: `outputs/`, `runs/`, `yolov8n.pt`, file cache `*.cache`.
+- **ML Training** dùng crop từ **nhãn ground-truth**; **Inference** dùng YOLO boxes → nếu YOLO miss/sai, độ chính xác có thể thấp hơn.
+- YOLO detect + classify (nc=3); ML phân loại lại độc lập từ features → hybrid approach hợp lý.
+- **Train lại YOLO**: Dùng `notebooks/02_Train_YOLO_Detection.ipynb` on Kaggle GPU, copy `best.pt` → `models/yolo/best.pt`.
+- **Không commit**: `outputs/`, `runs/`, `.venv/`, `*.cache`, large model files.
 
 ---
 
@@ -232,6 +418,16 @@ BloodImage_00038_....jpg,12,1,10,1
 |------------|---------|
 | [Tên thành viên 1] | Object Detection — YOLO |
 | [Tên thành viên 2] | Feature Extraction — OpenCV |
-| [Tên thành viên 3] | ML Classifier — Train, infer, pipeline |
+| [Tên thành viên 3] | ML Classification + 🆕 Reporting |
 
 ---
+
+## 📚 More Resources
+
+- Full documentation: [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md)
+- YOLOv8 docs: https://github.com/ultralytics/ultralytics
+- OpenCV: https://docs.opencv.org/
+- Scikit-learn: https://scikit-learn.org/
+
+---
+

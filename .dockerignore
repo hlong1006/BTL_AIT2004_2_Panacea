@@ -1,0 +1,42 @@
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.venv/
+venv/
+.env
+.DS_Store
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+runs/
+outputs/
+*.cache
+.ipynb_checkpoints/
+yolov8n.pt
+notebooks/
+*.log
+
+# Large files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store

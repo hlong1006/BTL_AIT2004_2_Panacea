@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  blood-cell-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blood-cell-analyzer:latest
+    container_name: blood-cell-analyzer
+    
+    # Mount volumes
+    volumes:
+      # Input data
+      - ./data:/app/data:ro
+      # Output results (writable)
+      - ./outputs:/app/outputs
+      # Models
+      - ./models:/app/models:ro
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    
+    # Restart policy
+    restart: "no"
+    
+    # Run single image analysis (modify as needed)
+    # Uncomment and modify the command below:
+    # command: --image /app/data/sample.png --output /app/outputs/
+
+# Alternative: GPU support (if you have GPU)
+services:
+  blood-cell-analyzer-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: blood-cell-analyzer:gpu
+    container_name: blood-cell-analyzer-gpu
+    
+    volumes:
+      - ./data:/app/data:ro
+      - ./outputs:/app/outputs
+      - ./models:/app/models:ro
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0
+    
+    # GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    restart: "no"
+    profiles:
+      - gpu  # Only run with: docker-compose --profile gpu up
