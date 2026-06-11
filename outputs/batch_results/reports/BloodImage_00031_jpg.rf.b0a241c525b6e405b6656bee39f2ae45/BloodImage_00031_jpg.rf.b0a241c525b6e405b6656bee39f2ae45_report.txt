@@ -1,0 +1,47 @@
+============================================================
+BLOOD CELL ANALYSIS REPORT
+============================================================
+
+Sample: BloodImage_00031_jpg.rf.b0a241c525b6e405b6656bee39f2ae45
+
+Total Cells Detected: 9
+
+------------------------------------------------------------
+CELL COUNT SUMMARY
+------------------------------------------------------------
+
+RBC          |    6 |  66.67% | █████████████████████████████████░░░░░░░░░░░░░░░░░
+
+WBC          |    2 |  22.22% | ███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+Platelets    |    1 |  11.11% | █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+------------------------------------------------------------
+MORPHOLOGICAL FEATURES (Average per Cell Type)
+------------------------------------------------------------
+
+WBC:
+  • Average Area:       6306.25 px²
+  • Average Perimeter:  410.55 px
+  • Average Circularity: 0.5210
+  • Average Texture:    10.3093
+
+Platelets:
+  • Average Area:       1479.50 px²
+  • Average Perimeter:  153.41 px
+  • Average Circularity: 0.7899
+  • Average Texture:    6.4236
+
+RBC:
+  • Average Area:       1841.75 px²
+  • Average Perimeter:  358.45 px
+  • Average Circularity: 0.1986
+  • Average Texture:    6.5151
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CLINICAL ALERTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+1. ⚠️ WBC high: 2 cells (22.2%) - Could indicate infection or immune disorder
+
+============================================================

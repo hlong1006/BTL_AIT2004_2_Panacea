@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Cell Analysis System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8edff;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin: 10px 0;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .results h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .result-item {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stat-box .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stat-box .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .download-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .download-links a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 8px 12px;
+            background: #f0f2ff;
+            border-radius: 4px;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .download-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #e8edff;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+        }
+
+        .info-box p {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🩺 Blood Cell Analysis System</h1>
+            <p>AI-Powered Detection & Classification of Blood Cells</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📤 Upload Image</h2>
+                
+                <div id="status" class="status hidden"></div>
+                <div class="progress-bar"><div class="progress" id="progressBar"></div></div>
+
+                <div class="upload-area" id="uploadArea">
+                    <p>📁 Click or drag image here</p>
+                    <p style="font-size: 0.9em; color: #999;">JPG, PNG, BMP (Max 50MB)</p>
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp">
+                </div>
+
+                <button onclick="document.getElementById('fileInput').click()">
+                    Choose File
+                </button>
+
+                <div id="info" class="info-box hidden">
+                    <p><strong>System Status:</strong> Ready</p>
+                    <p>Models: YOLOv8 + ML Classification</p>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card">
+                <h2>ℹ️ How It Works</h2>
+                <p style="margin: 10px 0; line-height: 1.6;">
+                    <strong>Step 1:</strong> Upload blood sample microscopy image<br>
+                    <strong>Step 2:</strong> YOLOv8 detects cell locations<br>
+                    <strong>Step 3:</strong> OpenCV extracts features<br>
+                    <strong>Step 4:</strong> ML model classifies cells<br>
+                    <strong>Step 5:</strong> View results & download reports
+                </p>
+                
+                <h3 style="margin-top: 20px; color: #667eea;">Cell Types</h3>
+                <div class="stat-box" style="text-align: left; margin: 10px 0;">
+                    <p>🔴 <strong>RBC</strong> (Red Blood Cells) - Normal oxygen carriers</p>
+                    <p>⚪ <strong>WBC</strong> (White Blood Cells) - Immune system cells</p>
+                    <p>🟡 <strong>Platelets</strong> - Blood clotting cells</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results">
+            <h2>📊 Analysis Results</h2>
+            
+            <div id="resultContainer" class="hidden">
+                <div id="resultContent"></div>
+            </div>
+
+            <div id="noResults" style="text-align: center; color: #999; padding: 40px;">
+                <p>No analysis performed yet</p>
+                <p style="font-size: 0.9em;">Upload an image to get started</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        const resultContainer = document.getElementById('resultContainer');
+        const noResults = document.getElementById('noResults');
+        const resultContent = document.getElementById('resultContent');
+        const info = document.getElementById('info');
+
+        // Upload Area Events
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                uploadFile();
+            }
+        });
+
+        fileInput.addEventListener('change', uploadFile);
+
+        // Upload Function
+        async function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show status
+            status.classList.remove('hidden', 'error', 'success');
+            status.classList.add('loading');
+            status.textContent = '🔄 Processing...';
+            noResults.classList.add('hidden');
+            resultContainer.classList.add('hidden');
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Upload
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                    status.classList.remove('loading');
+                    status.classList.add('success');
+                    status.textContent = '✅ Analysis Complete!';
+                } else {
+                    status.classList.remove('loading');
+                    status.classList.add('error');
+                    status.textContent = '❌ Error: ' + data.error;
+                }
+            } catch (error) {
+                status.classList.remove('loading');
+                status.classList.add('error');
+                status.textContent = '❌ Error: ' + error.message;
+            }
+
+            // Reset progress
+            setTimeout(() => {
+                progressBar.style.width = '0%';
+            }, 500);
+        }
+
+        // Display Results
+        function displayResults(data) {
+            const rbc = data.cell_counts.RBC || 0;
+            const wbc = data.cell_counts.WBC || 0;
+            const platelets = data.cell_counts['Platelets'] || 0;
+
+            const html = `
+                <div class="result-item">
+                    <h3>📷 ${data.image_name}</h3>
+                    ${data.output_image ? `<img src="${data.output_image}" class="image-preview" alt="Analysis Result">` : ''}
+                    
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="label">Total Cells</div>
+                            <div class="value">${data.total_cells}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="label">RBC</div>
+                            <div class="value">${rbc}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="label">WBC</div>
+                            <div class="value">${wbc}</div>
+                        </div>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="label">Platelets</div>
+                            <div class="value">${platelets}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="label">RBC %</div>
+                            <div class="value">${(data.cell_percentages.RBC || 0).toFixed(1)}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="label">WBC %</div>
+                            <div class="value">${(data.cell_percentages.WBC || 0).toFixed(1)}%</div>
+                        </div>
+                    </div>
+
+                    ${data.warnings && data.warnings.length > 0 ? `
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Clinical Alerts:</strong><br>
+                            ${data.warnings.join('<br>')}
+                        </div>
+                    ` : ''}
+
+                    <div class="download-links">
+                        ${data.report_json ? `<a href="${data.report_json}" download>📋 JSON Report</a>` : ''}
+                        ${data.report_csv ? `<a href="${data.report_csv}" download>📊 CSV Summary</a>` : ''}
+                    </div>
+
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; color: #667eea; font-weight: bold;">📄 Full Report</summary>
+                        <pre style="background: #f8f9ff; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; font-size: 0.8em;">${data.report || 'N/A'}</pre>
+                    </details>
+                </div>
+            `;
+
+            resultContent.innerHTML = html;
+            resultContainer.classList.remove('hidden');
+            noResults.classList.add('hidden');
+        }
+
+        // Check system status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (data.models_loaded) {
+                    info.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Initialize
+        checkStatus();
+    </script>
+</body>
+</html>

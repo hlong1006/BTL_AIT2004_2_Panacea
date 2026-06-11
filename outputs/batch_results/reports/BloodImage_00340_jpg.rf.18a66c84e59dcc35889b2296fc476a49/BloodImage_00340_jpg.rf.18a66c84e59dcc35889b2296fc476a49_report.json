@@ -1,0 +1,28 @@
+{
+  "total_cells": 16,
+  "cell_counts": {
+    "RBC": 15,
+    "WBC": 1
+  },
+  "cell_percentages": {
+    "RBC": 93.75,
+    "WBC": 6.25
+  },
+  "feature_stats": {
+    "RBC": {
+      "avg_area": 3503.3,
+      "avg_perimeter": 378.8964632431666,
+      "avg_circularity": 0.37067203095803847,
+      "avg_texture": 9.109396372432398
+    },
+    "WBC": {
+      "avg_area": 7943.0,
+      "avg_perimeter": 722.3919167518616,
+      "avg_circularity": 0.19127079854867335,
+      "avg_texture": 13.511240969653265
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f Platelets critically low: 0 cells (0.0%) - Could indicate thrombocytopenia"
+  ]
+}

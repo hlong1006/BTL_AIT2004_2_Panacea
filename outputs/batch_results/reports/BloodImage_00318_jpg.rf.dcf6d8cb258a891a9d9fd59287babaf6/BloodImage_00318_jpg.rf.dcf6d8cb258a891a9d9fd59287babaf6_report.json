@@ -1,0 +1,21 @@
+{
+  "total_cells": 14,
+  "cell_counts": {
+    "RBC": 14
+  },
+  "cell_percentages": {
+    "RBC": 100.0
+  },
+  "feature_stats": {
+    "RBC": {
+      "avg_area": 2443.25,
+      "avg_perimeter": 327.01792786802565,
+      "avg_circularity": 0.3012642924662892,
+      "avg_texture": 12.757940922305158
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f WBC critically low: 0 cells (0.0%) - Could indicate severe immunosuppression",
+    "\u26a0\ufe0f Platelets critically low: 0 cells (0.0%) - Could indicate thrombocytopenia"
+  ]
+}

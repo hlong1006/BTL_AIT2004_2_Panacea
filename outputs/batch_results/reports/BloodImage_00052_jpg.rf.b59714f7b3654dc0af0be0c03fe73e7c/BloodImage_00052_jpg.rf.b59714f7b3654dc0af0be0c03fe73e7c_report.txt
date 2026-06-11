@@ -1,0 +1,47 @@
+============================================================
+BLOOD CELL ANALYSIS REPORT
+============================================================
+
+Sample: BloodImage_00052_jpg.rf.b59714f7b3654dc0af0be0c03fe73e7c
+
+Total Cells Detected: 7
+
+------------------------------------------------------------
+CELL COUNT SUMMARY
+------------------------------------------------------------
+
+RBC          |    4 |  57.14% | ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░
+
+Platelets    |    2 |  28.57% | ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+WBC          |    1 |  14.29% | ███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+------------------------------------------------------------
+MORPHOLOGICAL FEATURES (Average per Cell Type)
+------------------------------------------------------------
+
+Platelets:
+  • Average Area:       820.75 px²
+  • Average Perimeter:  157.51 px
+  • Average Circularity: 0.4829
+  • Average Texture:    15.9284
+
+WBC:
+  • Average Area:       11684.00 px²
+  • Average Perimeter:  438.00 px
+  • Average Circularity: 0.7653
+  • Average Texture:    10.8584
+
+RBC:
+  • Average Area:       2005.25 px²
+  • Average Perimeter:  395.27 px
+  • Average Circularity: 0.1889
+  • Average Texture:    21.5520
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CLINICAL ALERTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+1. ⚠️ Platelets high: 2 cells (28.6%) - Could indicate thrombocytosis
+
+============================================================

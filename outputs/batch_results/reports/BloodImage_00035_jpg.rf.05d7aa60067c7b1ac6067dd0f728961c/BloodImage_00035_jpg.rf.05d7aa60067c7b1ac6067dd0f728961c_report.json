@@ -1,0 +1,36 @@
+{
+  "total_cells": 9,
+  "cell_counts": {
+    "WBC": 1,
+    "Platelets": 3,
+    "RBC": 5
+  },
+  "cell_percentages": {
+    "WBC": 11.11111111111111,
+    "Platelets": 33.33333333333333,
+    "RBC": 55.55555555555556
+  },
+  "feature_stats": {
+    "WBC": {
+      "avg_area": 14364.0,
+      "avg_perimeter": 480.0,
+      "avg_circularity": 0.7834346679889547,
+      "avg_texture": 9.123256016795589
+    },
+    "Platelets": {
+      "avg_area": 800.5,
+      "avg_perimeter": 176.59391486644745,
+      "avg_circularity": 0.39670294407556533,
+      "avg_texture": 10.085275776348103
+    },
+    "RBC": {
+      "avg_area": 2109.4,
+      "avg_perimeter": 419.38317239284515,
+      "avg_circularity": 0.1507009684843421,
+      "avg_texture": 12.849132835743095
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f Platelets high: 3 cells (33.3%) - Could indicate thrombocytosis"
+  ]
+}

@@ -1,0 +1,41 @@
+============================================================
+BLOOD CELL ANALYSIS REPORT
+============================================================
+
+Sample: BloodImage_00147_jpg.rf.4e28c168a5c3ef8ff9e18c5cb1d7db40
+
+Total Cells Detected: 8
+
+------------------------------------------------------------
+CELL COUNT SUMMARY
+------------------------------------------------------------
+
+RBC          |    6 |  75.00% | █████████████████████████████████████░░░░░░░░░░░░░
+
+WBC          |    2 |  25.00% | ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+------------------------------------------------------------
+MORPHOLOGICAL FEATURES (Average per Cell Type)
+------------------------------------------------------------
+
+RBC:
+  • Average Area:       1992.42 px²
+  • Average Perimeter:  396.18 px
+  • Average Circularity: 0.1685
+  • Average Texture:    4.9715
+
+WBC:
+  • Average Area:       16016.75 px²
+  • Average Perimeter:  508.19 px
+  • Average Circularity: 0.7793
+  • Average Texture:    4.2765
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CLINICAL ALERTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+1. ⚠️ WBC high: 2 cells (25.0%) - Could indicate infection or immune disorder
+
+2. ⚠️ Platelets critically low: 0 cells (0.0%) - Could indicate thrombocytopenia
+
+============================================================

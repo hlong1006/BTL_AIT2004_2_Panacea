@@ -1,0 +1,34 @@
+{
+  "total_cells": 10,
+  "cell_counts": {
+    "WBC": 1,
+    "Platelets": 1,
+    "RBC": 8
+  },
+  "cell_percentages": {
+    "WBC": 10.0,
+    "Platelets": 10.0,
+    "RBC": 80.0
+  },
+  "feature_stats": {
+    "WBC": {
+      "avg_area": 20011.5,
+      "avg_perimeter": 577.5563488006592,
+      "avg_circularity": 0.7538775019899556,
+      "avg_texture": 15.419627632338916
+    },
+    "Platelets": {
+      "avg_area": 1140.0,
+      "avg_perimeter": 136.0,
+      "avg_circularity": 0.7745276005822587,
+      "avg_texture": 19.355240986234342
+    },
+    "RBC": {
+      "avg_area": 2461.3125,
+      "avg_perimeter": 372.1405016332865,
+      "avg_circularity": 0.27295591437234407,
+      "avg_texture": 220.3094369675962
+    }
+  },
+  "warnings": []
+}

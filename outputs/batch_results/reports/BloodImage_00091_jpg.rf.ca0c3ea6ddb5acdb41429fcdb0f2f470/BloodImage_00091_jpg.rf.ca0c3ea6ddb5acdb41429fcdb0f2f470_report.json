@@ -1,0 +1,23 @@
+{
+  "total_cells": 1,
+  "cell_counts": {
+    "WBC": 1
+  },
+  "cell_percentages": {
+    "WBC": 100.0
+  },
+  "feature_stats": {
+    "WBC": {
+      "avg_area": 3817.0,
+      "avg_perimeter": 610.9360721111298,
+      "avg_circularity": 0.1285110545026807,
+      "avg_texture": 9.566288003051023
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f RBC low: 0 cells (0.0%) - Could indicate anemia or blood disorder",
+    "\u26a0\ufe0f WBC high: 1 cells (100.0%) - Could indicate infection or immune disorder",
+    "\u26a0\ufe0f Platelets critically low: 0 cells (0.0%) - Could indicate thrombocytopenia",
+    "\u26a0\ufe0f Very few cells detected: 1 - May need to re-scan or adjust microscope"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "total_cells": 6,
+  "cell_counts": {
+    "RBC": 5,
+    "Platelets": 1
+  },
+  "cell_percentages": {
+    "RBC": 83.33333333333334,
+    "Platelets": 16.666666666666664
+  },
+  "feature_stats": {
+    "RBC": {
+      "avg_area": 3784.5,
+      "avg_perimeter": 466.2150480985641,
+      "avg_circularity": 0.2724371644441955,
+      "avg_texture": 941.6570958943379
+    },
+    "Platelets": {
+      "avg_area": 921.5,
+      "avg_perimeter": 120.24264061450958,
+      "avg_circularity": 0.8009182566655023,
+      "avg_texture": 6.482956393080124
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f WBC critically low: 0 cells (0.0%) - Could indicate severe immunosuppression"
+  ]
+}

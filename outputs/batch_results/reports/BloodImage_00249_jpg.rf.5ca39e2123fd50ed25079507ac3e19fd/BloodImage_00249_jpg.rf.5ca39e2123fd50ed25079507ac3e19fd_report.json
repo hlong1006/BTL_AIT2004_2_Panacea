@@ -1,0 +1,36 @@
+{
+  "total_cells": 9,
+  "cell_counts": {
+    "WBC": 2,
+    "Platelets": 1,
+    "RBC": 6
+  },
+  "cell_percentages": {
+    "WBC": 22.22222222222222,
+    "Platelets": 11.11111111111111,
+    "RBC": 66.66666666666666
+  },
+  "feature_stats": {
+    "WBC": {
+      "avg_area": 17211.75,
+      "avg_perimeter": 685.0035699009895,
+      "avg_circularity": 0.507353498840461,
+      "avg_texture": 11.058391178091526
+    },
+    "Platelets": {
+      "avg_area": 754.0,
+      "avg_perimeter": 110.0,
+      "avg_circularity": 0.783061441588993,
+      "avg_texture": 13.271763450693493
+    },
+    "RBC": {
+      "avg_area": 1645.6666666666667,
+      "avg_perimeter": 328.0341976682345,
+      "avg_circularity": 0.26428418705979595,
+      "avg_texture": 10.138373989783636
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f WBC high: 2 cells (22.2%) - Could indicate infection or immune disorder"
+  ]
+}
