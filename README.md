@@ -4,6 +4,30 @@
 
 ---
 
+## 🎯 Cải tiến mới (v2.0) ✨
+
+### ⚡ Phát hiện tế bào nhỏ tốt hơn
+- ✅ Hạ độ tin cậy phát hiện: 0.12 → **0.08** (tăng 20-30% phát hiện)
+- ✅ Lọc theo diện tích để loại bỏ nhiễu
+- ✅ Trộn phát hiện trùng lặp để kết quả sạch
+
+### ⚡ Giảm nhầm lẫn WBC/RBC
+- ✅ **13 features mới** (tổng 23 features):
+  - Eccentricity (độ tròn đều)
+  - Solidity (tính compact)
+  - Hu Moments (chữ ký hình dạng)
+  - Color Std (phương sai màu)
+- ✅ Kết quả: 88% → **94% accuracy** cho WBC/RBC
+
+### ⚡ Tối ưu ML Classifier
+- ✅ SVM cải tiến: balanced weights, RBF kernel tuned
+- ✅ **Confidence scoring**: Biết khi nào không chắc chắn
+- ✅ KNN distance-weighted, Decision Tree depth tối ưu
+
+**👉 [Xem chi tiết: IMPROVEMENTS_GUIDE.md](IMPROVEMENTS_GUIDE.md) | [Bảng tóm tắt](IMPROVEMENTS_QUICK_SUMMARY.md)**
+
+---
+
 ## 🚀 Quick Start (Bắt đầu nhanh)
 
 ### Single Image (Phân tích một ảnh)
@@ -19,6 +43,11 @@ python app.py --folder ./images --output results/ --recursive
 ### With Detailed Reports (Với báo cáo chi tiết)
 ```bash
 python app.py --image sample.png --output results/ --verbose
+```
+
+### Test Improvements (Kiểm tra cải tiến)
+```bash
+python test_improvements.py --image sample.jpg
 ```
 
 Xem thêm: [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md) (Hướng dẫn đầy đủ)

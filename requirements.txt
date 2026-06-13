@@ -8,3 +8,5 @@ joblib>=1.0.0
 PyYAML>=5.4
 tqdm>=4.60.0
 openpyxl>=3.0.0
+Flask>=2.0.0
+Werkzeug>=2.0.0

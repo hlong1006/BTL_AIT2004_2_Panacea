@@ -1,0 +1,37 @@
+{
+  "total_cells": 70,
+  "cell_counts": {
+    "WBC": 3,
+    "Platelets": 60,
+    "RBC": 7
+  },
+  "cell_percentages": {
+    "WBC": 4.285714285714286,
+    "Platelets": 85.71428571428571,
+    "RBC": 10.0
+  },
+  "feature_stats": {
+    "WBC": {
+      "avg_area": 7763.333333333333,
+      "avg_perimeter": 489.2352081139882,
+      "avg_circularity": 0.4607094052547658,
+      "avg_texture": 471.1572270954821
+    },
+    "Platelets": {
+      "avg_area": 1751.5416666666667,
+      "avg_perimeter": 207.84943072398502,
+      "avg_circularity": 0.5648751826732293,
+      "avg_texture": 129.5046307951625
+    },
+    "RBC": {
+      "avg_area": 1574.5714285714287,
+      "avg_perimeter": 326.7141604253224,
+      "avg_circularity": 0.20126478204790635,
+      "avg_texture": 159.85019738205543
+    }
+  },
+  "warnings": [
+    "\u26a0\ufe0f RBC low: 7 cells (10.0%) - Could indicate anemia or blood disorder",
+    "\u26a0\ufe0f Platelets high: 60 cells (85.7%) - Could indicate thrombocytosis"
+  ]
+}

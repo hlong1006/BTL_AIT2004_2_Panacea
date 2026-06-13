@@ -1,0 +1,49 @@
+============================================================
+BLOOD CELL ANALYSIS REPORT
+============================================================
+
+Sample: 20260613_104241_medium_20200213_095052_149350_bach_cau_hat_trung_max_1800x1800_png_6dd4d049c8
+
+Total Cells Detected: 70
+
+------------------------------------------------------------
+CELL COUNT SUMMARY
+------------------------------------------------------------
+
+Platelets    |   60 |  85.71% | ██████████████████████████████████████████░░░░░░░░
+
+RBC          |    7 |  10.00% | █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+WBC          |    3 |   4.29% | ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+------------------------------------------------------------
+MORPHOLOGICAL FEATURES (Average per Cell Type)
+------------------------------------------------------------
+
+WBC:
+  • Average Area:       7763.33 px²
+  • Average Perimeter:  489.24 px
+  • Average Circularity: 0.4607
+  • Average Texture:    471.1572
+
+Platelets:
+  • Average Area:       1751.54 px²
+  • Average Perimeter:  207.85 px
+  • Average Circularity: 0.5649
+  • Average Texture:    129.5046
+
+RBC:
+  • Average Area:       1574.57 px²
+  • Average Perimeter:  326.71 px
+  • Average Circularity: 0.2013
+  • Average Texture:    159.8502
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CLINICAL ALERTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+1. ⚠️ RBC low: 7 cells (10.0%) - Could indicate anemia or blood disorder
+
+2. ⚠️ Platelets high: 60 cells (85.7%) - Could indicate thrombocytosis
+
+============================================================

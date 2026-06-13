@@ -32,6 +32,10 @@ class BloodCellAnalysisApp:
         self,
         yolo_model_path: Optional[Path] = None,
         ml_model_path: Optional[Path] = None,
+        yolo_conf: float = 0.12,
+        yolo_iou: float = 0.45,
+        yolo_imgsz: int = 416,
+        yolo_max_det: int = 500,
         verbose: bool = False,
     ):
         """Initialize the application."""
@@ -63,6 +67,10 @@ class BloodCellAnalysisApp:
         self.pipeline = HybridCellPipeline(
             yolo_model_path=yolo_to_load,
             ml_model_path=ml_model_path,
+            yolo_conf=yolo_conf,
+            yolo_iou=yolo_iou,
+            yolo_imgsz=yolo_imgsz,
+            yolo_max_det=yolo_max_det,
         )
     
     def analyze_image(
@@ -280,6 +288,24 @@ Examples:
         action="store_true",
         help="Print detailed output",
     )
+    parser.add_argument(
+        "--conf",
+        type=float,
+        default=0.12,
+        help="YOLO confidence threshold (default: 0.12, lower = more detections)",
+    )
+    parser.add_argument(
+        "--iou",
+        type=float,
+        default=0.45,
+        help="YOLO NMS IoU threshold (default: 0.45)",
+    )
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        default=416,
+        help="YOLO inference image size, should match training (default: 416)",
+    )
     
     return parser.parse_args()
 
@@ -301,6 +327,9 @@ def main():
         app = BloodCellAnalysisApp(
             yolo_model_path=args.yolo_model,
             ml_model_path=args.ml_model,
+            yolo_conf=args.conf,
+            yolo_iou=args.iou,
+            yolo_imgsz=args.imgsz,
             verbose=args.verbose,
         )
         

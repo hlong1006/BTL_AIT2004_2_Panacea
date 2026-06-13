@@ -11,16 +11,22 @@ services:
     # Mount volumes
     volumes:
       # Input data
-      - ./data:/app/data:ro
+      - ./data:/app/data
       # Output results (writable)
       - ./outputs:/app/outputs
       # Models
-      - ./models:/app/models:ro
+      - ./models:/app/models
     
     # Environment variables
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
+      - FLASK_APP=web_app.py
+      - FLASK_ENV=production
+    
+    # Port mapping for web interface
+    ports:
+      - "5000:5000"
     
     # Resource limits
     deploy:
@@ -35,12 +41,11 @@ services:
     # Restart policy
     restart: "no"
     
-    # Run single image analysis (modify as needed)
-    # Uncomment and modify the command below:
-    # command: --image /app/data/sample.png --output /app/outputs/
+    # Run Flask web app
+    command: python web_app.py
 
-# Alternative: GPU support (if you have GPU)
-services:
+  # Alternative: GPU support (if you have GPU)
+  # ĐÃ XÓA CHỮ SERVICES: Ở ĐÂY. Thụt lề thẳng hàng với 'blood-cell-analyzer' ở trên.
   blood-cell-analyzer-gpu:
     build:
       context: .
@@ -69,4 +74,4 @@ services:
     
     restart: "no"
     profiles:
-      - gpu  # Only run with: docker-compose --profile gpu up
+      - gpu  # Only run with: docker compose --profile gpu up

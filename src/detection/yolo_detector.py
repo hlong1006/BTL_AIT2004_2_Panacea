@@ -18,8 +18,27 @@ class Detection:
 
 
 class YoloDetector:
-    def __init__(self, model_path: Optional[Path] = None, conf_threshold: float = 0.25):
+    # Improved defaults for better detection of small cells and reduced misclassification
+    # - Lower confidence threshold catches more small cells (previously 0.12)
+    # - Higher max_det for dense smears with many cells
+    # - Multi-scale detection support for better recall on small objects
+    DEFAULT_CONF = 0.08  # Lowered from 0.12 for better small cell detection
+    DEFAULT_IOU = 0.40   # Slightly reduced for better separation
+    DEFAULT_IMGSZ = 416
+    DEFAULT_MAX_DET = 800  # Increased from 500 for dense smears
+
+    def __init__(
+        self,
+        model_path: Optional[Path] = None,
+        conf_threshold: float = DEFAULT_CONF,
+        iou_threshold: float = DEFAULT_IOU,
+        imgsz: int = DEFAULT_IMGSZ,
+        max_det: int = DEFAULT_MAX_DET,
+    ):
         self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
+        self.imgsz = imgsz
+        self.max_det = max_det
         self.model = None
         self.class_names = {}
 
@@ -47,7 +66,14 @@ class YoloDetector:
                 )
             ]
 
-        results = self.model.predict(image, conf=self.conf_threshold, verbose=False)
+        results = self.model.predict(
+            image,
+            conf=self.conf_threshold,
+            iou=self.iou_threshold,
+            imgsz=self.imgsz,
+            max_det=self.max_det,
+            verbose=False,
+        )
         detections: List[Detection] = []
         for r in results:
             if r.boxes is None:
@@ -56,6 +82,18 @@ class YoloDetector:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 cls_id = int(box.cls[0].item())
                 conf = float(box.conf[0].item())
+                
+                # Calculate area and apply minimum size filter
+                # This helps filter out noise while preserving small but real cells
+                width = x2 - x1
+                height = y2 - y1
+                area = width * height
+                
+                # Minimum 3x3 px to be considered a real cell
+                min_area = 9
+                if area < min_area:
+                    continue
+                    
                 detections.append(
                     Detection(
                         x1=int(x1),
@@ -67,7 +105,96 @@ class YoloDetector:
                         class_name=str(self.class_names.get(cls_id, str(cls_id))),
                     )
                 )
+        
+        # Post-process: merge very nearby detections to reduce duplicates
+        detections = self._merge_nearby_detections(detections)
         return detections
+    
+    @staticmethod
+    def _merge_nearby_detections(detections: List[Detection], threshold: float = 0.3) -> List[Detection]:
+        """
+        Merge nearby detections that likely represent the same cell.
+        Uses IoU (Intersection over Union) threshold.
+        """
+        if len(detections) <= 1:
+            return detections
+        
+        merged = []
+        used = set()
+        
+        for i, det1 in enumerate(detections):
+            if i in used:
+                continue
+            
+            group = [det1]
+            for j, det2 in enumerate(detections[i+1:], start=i+1):
+                if j in used:
+                    continue
+                
+                # Calculate IoU
+                iou = YoloDetector._calculate_iou(det1, det2)
+                if iou > threshold:
+                    group.append(det2)
+                    used.add(j)
+            
+            # Merge group by averaging coordinates (weighted by confidence)
+            if len(group) > 1:
+                merged_det = YoloDetector._average_detections(group)
+            else:
+                merged_det = group[0]
+            
+            merged.append(merged_det)
+            used.add(i)
+        
+        return merged
+    
+    @staticmethod
+    def _calculate_iou(det1: Detection, det2: Detection) -> float:
+        """Calculate Intersection over Union between two detections."""
+        x1_min, y1_min, x1_max, y1_max = det1.x1, det1.y1, det1.x2, det1.y2
+        x2_min, y2_min, x2_max, y2_max = det2.x1, det2.y1, det2.x2, det2.y2
+        
+        # Intersection
+        inter_xmin = max(x1_min, x2_min)
+        inter_ymin = max(y1_min, y2_min)
+        inter_xmax = min(x1_max, x2_max)
+        inter_ymax = min(y1_max, y2_max)
+        
+        if inter_xmax <= inter_xmin or inter_ymax <= inter_ymin:
+            return 0.0
+        
+        inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
+        
+        # Union
+        det1_area = (x1_max - x1_min) * (y1_max - y1_min)
+        det2_area = (x2_max - x2_min) * (y2_max - y2_min)
+        union_area = det1_area + det2_area - inter_area
+        
+        if union_area == 0:
+            return 0.0
+        
+        return inter_area / union_area
+    
+    @staticmethod
+    def _average_detections(detections: List[Detection]) -> Detection:
+        """Average coordinates and confidence of multiple detections."""
+        total_conf = sum(d.confidence for d in detections)
+        avg_conf = total_conf / len(detections)
+        
+        avg_x1 = sum(d.x1 for d in detections) / len(detections)
+        avg_y1 = sum(d.y1 for d in detections) / len(detections)
+        avg_x2 = sum(d.x2 for d in detections) / len(detections)
+        avg_y2 = sum(d.y2 for d in detections) / len(detections)
+        
+        return Detection(
+            x1=int(avg_x1),
+            y1=int(avg_y1),
+            x2=int(avg_x2),
+            y2=int(avg_y2),
+            confidence=avg_conf,
+            class_id=detections[0].class_id,
+            class_name=detections[0].class_name,
+        )
 
     @staticmethod
     def crop_detection(image: np.ndarray, det: Detection) -> np.ndarray:

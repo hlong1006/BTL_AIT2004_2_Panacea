@@ -1,0 +1,41 @@
+============================================================
+BLOOD CELL ANALYSIS REPORT
+============================================================
+
+Sample: 20260613_231005_HEME002
+
+Total Cells Detected: 61
+
+------------------------------------------------------------
+CELL COUNT SUMMARY
+------------------------------------------------------------
+
+RBC          |   60 |  98.36% | █████████████████████████████████████████████████░
+
+WBC          |    1 |   1.64% | ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+------------------------------------------------------------
+MORPHOLOGICAL FEATURES (Average per Cell Type)
+------------------------------------------------------------
+
+RBC:
+  • Average Area:       1134.11 px²
+  • Average Perimeter:  186.31 px
+  • Average Circularity: 0.4667
+  • Average Texture:    886.0193
+
+WBC:
+  • Average Area:       2883.50 px²
+  • Average Perimeter:  438.41 px
+  • Average Circularity: 0.1885
+  • Average Texture:    1572.3620
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CLINICAL ALERTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+1. ⚠️ WBC critically low: 1 cells (1.6%) - Could indicate severe immunosuppression
+
+2. ⚠️ Platelets critically low: 0 cells (0.0%) - Could indicate thrombocytopenia
+
+============================================================
