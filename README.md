@@ -2,11 +2,6 @@
 
 > Hệ thống phát hiện và phân loại tế bào máu tự động sử dụng mô hình YOLOv8 kết hợp với các thuật toán Machine Learning nhằm hỗ trợ phân tích ảnh lam máu.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
-![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-green)
-![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-red)
-![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-Machine%20Learning-orange)
-
 ---
 
 #  Giới thiệu
