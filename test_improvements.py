@@ -42,7 +42,7 @@ class ImprovementTester:
         """
         image = cv2.imread(str(image_path))
         if image is None:
-            print(f"❌ Could not read image: {image_path}")
+            print(f" Could not read image: {image_path}")
             return 0, 0, 0.0
         
         # Old settings
@@ -83,7 +83,7 @@ class ImprovementTester:
         """
         image = cv2.imread(str(image_path))
         if image is None:
-            print(f"❌ Could not read image: {image_path}")
+            print(f" Could not read image: {image_path}")
             return {}
         
         detector = YoloDetector(model_path=yolo_path)
