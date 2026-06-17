@@ -344,7 +344,7 @@ project/
 ---
 
 
-# 🔮 Hướng phát triển
+#  Hướng phát triển
 
 * Triển khai lên Cloud (AWS/Azure)
 * Ứng dụng di động
