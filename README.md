@@ -178,7 +178,7 @@ pip install -r requirements.txt
 
 ---
 
-# ▶ Hướng dẫn sử dụng
+#  Hướng dẫn sử dụng
 
 ## Giao diện Web
 
