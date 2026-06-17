@@ -18,9 +18,9 @@ Dự án này xây dựng một hệ thống AI có khả năng:
 * Phát hiện tế bào máu trong ảnh lam máu.
 * Phân loại tế bào thành:
 
-  🔴 Hồng cầu (RBC)
-  🔵 Bạch cầu (WBC)
-  🟠 Tiểu cầu (Platelets)
+  - 🔴 Hồng cầu (RBC)
+  - 🔵 Bạch cầu (WBC)
+  - 🟠 Tiểu cầu (Platelets)
 * Thống kê số lượng và tỷ lệ từng loại tế bào.
 * Sinh báo cáo kết quả tự động.
 
