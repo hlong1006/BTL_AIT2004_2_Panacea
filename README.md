@@ -299,25 +299,6 @@ project/
 
 ---
 
-#  Thành viên nhóm
-
-| Thành viên   | Vai trò                    |
-| ------------ | -------------------------- |
-| Thành viên 1 | Object Detection           |
-| Thành viên 2 | Feature Extraction         |
-| Thành viên 3 | Classification & Reporting |
-
----
-
-#  Hướng phát triển
-
-* Mở rộng tập dữ liệu huấn luyện.
-* Triển khai trên nền tảng Cloud.
-* Xây dựng ứng dụng di động.
-* Tích hợp Explainable AI (SHAP, LIME).
-* Tích hợp với hệ thống quản lý bệnh viện.
-
----
 
 #  Trạng thái dự án
 
@@ -330,3 +311,29 @@ project/
 - Xử lý thành công 765 ảnh dữ liệu
 
 - Sẵn sàng cho mục đích nghiên cứu và học tập
+
+---
+
+
+
+#  Hướng phát triển
+
+* Mở rộng tập dữ liệu huấn luyện.
+* Triển khai trên nền tảng Cloud.
+* Xây dựng ứng dụng di động.
+* Tích hợp Explainable AI (SHAP, LIME).
+* Tích hợp với hệ thống quản lý bệnh viện.
+
+---
+
+#  Thành viên nhóm
+
+1. Hoa Văn Long - 24022390
+
+2. Lê Việt Phú - 24022426
+
+3. Nguyễn Hải Nam - 24022414
+
+
+
+
