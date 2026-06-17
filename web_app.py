@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Blood Cell Detection & Classification Web Application
-Flask-based web interface for the Hybrid AI Pipeline
+Ứng dụng Web Phát hiện & Phân loại Tế bào Máu
+Giao diện web dựa trên Flask cho Quy trình AI Lai (Hybrid AI Pipeline)
 """
 
 import os
@@ -21,13 +21,13 @@ from src.detection.yolo_detector import YoloDetector
 from src.pipeline.end_to_end import HybridCellPipeline
 
 # ============================================================================
-# FLASK APP SETUP
+# THIẾT LẬP ỨNG DỤNG FLASK
 # ============================================================================
 
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
+# Cấu hình
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
 RESULTS_FOLDER = Path(__file__).parent / 'results'
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'bmp'}
@@ -41,24 +41,24 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 app.config['JSON_SORT_KEYS'] = False
 
 # ============================================================================
-# LOAD MODELS
+# TẢI CÁC MÔ HÌNH
 # ============================================================================
 
 try:
     yolo_model_path = PATHS.yolo_models / "best.pt"
     ml_model_path = PATHS.ml_models / "best_ml_model.pt"
     
-    print("🔄 Initializing Pipeline...")
+    print(" Đang khởi tạo Quy trình...")
     pipeline = HybridCellPipeline(yolo_model_path, ml_model_path)
-    print("✅ Pipeline ready!")
+    print(" Quy trình đã sẵn sàng!")
     MODELS_LOADED = True
 except Exception as e:
-    print(f"❌ Error loading models: {e}")
+    print(f" Lỗi khi tải mô hình: {e}")
     MODELS_LOADED = False
     pipeline = None
 
 # ============================================================================
-# HELPER FUNCTIONS
+# CÁC HÀM HỖ TRỢ
 # ============================================================================
 
 def allowed_file(filename):
@@ -66,25 +66,25 @@ def allowed_file(filename):
 
 
 def analyze_image_file(filepath, output_dir):
-    """Analyze single image and return results"""
+    """Phân tích ảnh đơn và trả về kết quả"""
     if not MODELS_LOADED or pipeline is None:
         return {
             "success": False,
-            "error": "Models not loaded. Please restart application."
+            "error": "Các mô hình chưa được tải. Vui lòng khởi động lại ứng dụng."
         }
     
     try:
         image_path = Path(filepath)
         output_image_path = output_dir / f"{image_path.stem}_analyzed.png"
         
-        # Run pipeline
+        # Chạy quy trình
         result = pipeline.run_on_image_full(
             image_path=image_path,
             output_image_path=output_image_path,
             output_stats_dir=output_dir,
         )
         
-        # Prepare response
+        # Chuẩn bị phản hồi
         response = {
             "success": True,
             "image_name": image_path.name,
@@ -96,7 +96,7 @@ def analyze_image_file(filepath, output_dir):
             "output_image": str(output_image_path.relative_to(Path(__file__).parent)),
         }
         
-        # Add download links
+        # Thêm liên kết tải xuống
         if (output_dir / f"{image_path.stem}_report.json").exists():
             response["report_json"] = str((output_dir / f"{image_path.stem}_report.json").relative_to(Path(__file__).parent))
         if (output_dir / f"{image_path.stem}_summary.csv").exists():
@@ -112,18 +112,18 @@ def analyze_image_file(filepath, output_dir):
 
 
 # ============================================================================
-# ROUTES
+# CÁC ĐỊNH TUYẾN (ROUTES)
 # ============================================================================
 
 @app.route('/')
 def index():
-    """Main page"""
+    """Trang chính"""
     return render_template('index.html', models_loaded=MODELS_LOADED)
 
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
+    """Điểm cuối (endpoint) kiểm tra tình trạng hệ thống"""
     return jsonify({
         "status": "ok",
         "models_loaded": MODELS_LOADED,
@@ -133,7 +133,7 @@ def health_check():
 
 @app.route('/api/info', methods=['GET'])
 def system_info():
-    """Get system information"""
+    """Lấy thông tin hệ thống"""
     return jsonify({
         "status": "ready" if MODELS_LOADED else "error",
         "system": "Blood Cell Detection & Classification",
@@ -152,36 +152,36 @@ def system_info():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle file upload and analysis"""
+    """Xử lý tải tệp lên và phân tích"""
     
     if not MODELS_LOADED:
         return jsonify({
             "success": False,
-            "error": "System not ready - models not loaded"
+            "error": "Hệ thống chưa sẵn sàng - các mô hình chưa được tải"
         }), 503
     
-    # Check file
+    # Kiểm tra tệp
     if 'file' not in request.files:
         return jsonify({
             "success": False,
-            "error": "No file provided"
+            "error": "Không có tệp nào được cung cấp"
         }), 400
     
     file = request.files['file']
     if file.filename == '':
         return jsonify({
             "success": False,
-            "error": "No file selected"
+            "error": "Chưa chọn tệp nào"
         }), 400
     
     if not allowed_file(file.filename):
         return jsonify({
             "success": False,
-            "error": f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            "error": f"Loại tệp không được phép. Các loại được phép: {', '.join(ALLOWED_EXTENSIONS)}"
         }), 400
     
     try:
-        # Save uploaded file
+        # Lưu tệp đã tải lên
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_")
         filename = timestamp + filename
@@ -189,15 +189,15 @@ def upload_file():
         filepath = UPLOAD_FOLDER / filename
         file.save(str(filepath))
         
-        # Create analysis output directory
+        # Tạo thư mục đầu ra cho phân tích
         output_dir = RESULTS_FOLDER / filename.split('.')[0]
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Analyze
+        # Phân tích
         result = analyze_image_file(filepath, output_dir)
         
         if result['success']:
-            # Generate thumbnail
+            # Tạo ảnh thu nhỏ (thumbnail)
             img = cv2.imread(str(filepath))
             if img is not None:
                 height = img.shape[0]
@@ -211,13 +211,13 @@ def upload_file():
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": f"Server error: {str(e)}"
+            "error": f"Lỗi máy chủ: {str(e)}"
         }), 500
 
 
 @app.route('/api/results', methods=['GET'])
 def get_results():
-    """Get list of analysis results"""
+    """Lấy danh sách các kết quả phân tích"""
     try:
         results = []
         for result_dir in sorted(RESULTS_FOLDER.iterdir(), reverse=True):
@@ -235,7 +235,7 @@ def get_results():
         return jsonify({
             "success": True,
             "count": len(results),
-            "results": results[:10]  # Return last 10
+            "results": results[:10]  # Trả về 10 kết quả gần nhất
         })
     except Exception as e:
         return jsonify({
@@ -246,7 +246,7 @@ def get_results():
 
 @app.route('/api/download/<path:filename>', methods=['GET'])
 def download_file(filename):
-    """Download result file"""
+    """Tải xuống tệp kết quả"""
     try:
         file_path = RESULTS_FOLDER / filename
         if file_path.exists() and file_path.is_file():
@@ -254,7 +254,7 @@ def download_file(filename):
         else:
             return jsonify({
                 "success": False,
-                "error": "File not found"
+                "error": "Không tìm thấy tệp"
             }), 404
     except Exception as e:
         return jsonify({
@@ -265,43 +265,43 @@ def download_file(filename):
 
 @app.route('/results/<path:filename>', methods=['GET'])
 def serve_result(filename):
-    """Serve result image"""
+    """Cung cấp ảnh kết quả"""
     try:
         file_path = RESULTS_FOLDER / filename
         if file_path.exists() and file_path.is_file():
             return send_file(str(file_path))
         else:
-            return "File not found", 404
+            return "Không tìm thấy tệp", 404
     except Exception as e:
         return str(e), 500
 
 
 # ============================================================================
-# ERROR HANDLERS
+# XỬ LÝ LỖI (ERROR HANDLERS)
 # ============================================================================
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"error": "Not found"}), 404
+    return jsonify({"error": "Không tìm thấy"}), 404
 
 
 @app.errorhandler(500)
 def server_error(error):
-    return jsonify({"error": "Server error"}), 500
+    return jsonify({"error": "Lỗi máy chủ"}), 500
 
 
 # ============================================================================
-# MAIN
+# CHƯƠNG TRÌNH CHÍNH
 # ============================================================================
 
 if __name__ == '__main__':
     print("="*60)
-    print("🩺 Blood Cell Analysis Web App")
+    print(" Ứng dụng Web Phân tích Tế bào Máu")
     print("="*60)
-    print(f"Upload folder: {UPLOAD_FOLDER}")
-    print(f"Results folder: {RESULTS_FOLDER}")
-    print(f"Models loaded: {MODELS_LOADED}")
-    print("\n🚀 Starting Flask server...")
+    print(f"Thư mục tải lên: {UPLOAD_FOLDER}")
+    print(f"Thư mục kết quả: {RESULTS_FOLDER}")
+    print(f"Các mô hình đã tải: {MODELS_LOADED}")
+    print("\n Đang khởi động máy chủ Flask...")
     print("   URL: http://localhost:5000")
     print("="*60)
     

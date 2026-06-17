@@ -15,31 +15,17 @@ from src.utils.statistics import StatisticsCalculator, CellStatistics, ReportExp
 
 @dataclass
 class PipelineOutput:
-    """Container for pipeline execution results."""
-    image_path: Path  # Output annotated image
-    stats: CellStatistics  # Statistics object
-    features_df: pd.DataFrame  # DataFrame with features and predictions
-    report_text: str  # Text report
+    """Vùng chứa (container) cho các kết quả thực thi quy trình."""
+    image_path: Path  # Đường dẫn ảnh đầu ra đã chú thích
+    stats: CellStatistics  # Đối tượng thống kê
+    features_df: pd.DataFrame  # DataFrame chứa các đặc trưng và dự đoán
+    report_text: str  # Báo cáo dạng văn bản
 
 
 class HybridCellPipeline:
-    def __init__(
-        self,
-        yolo_model_path: Optional[Path],
-        ml_model_path: Path,
-        yolo_conf: float = YoloDetector.DEFAULT_CONF,
-        yolo_iou: float = YoloDetector.DEFAULT_IOU,
-        yolo_imgsz: int = YoloDetector.DEFAULT_IMGSZ,
-        yolo_max_det: int = YoloDetector.DEFAULT_MAX_DET,
-    ):
+    def __init__(self, yolo_model_path: Optional[Path], ml_model_path: Path):
         ensure_dirs([PATHS.interim_crops, PATHS.processed_features])
-        self.detector = YoloDetector(
-            yolo_model_path,
-            conf_threshold=yolo_conf,
-            iou_threshold=yolo_iou,
-            imgsz=yolo_imgsz,
-            max_det=yolo_max_det,
-        )
+        self.detector = YoloDetector(yolo_model_path)
         self.extractor = CellFeatureExtractor()
         self.ml_checkpoint = MLClassifier.load_model(ml_model_path)
 
@@ -50,14 +36,14 @@ class HybridCellPipeline:
         save_feature_csv: Optional[Path] = None,
     ) -> Tuple[Path, pd.DataFrame, List[str]]:
         """
-        Run pipeline on single image and return results.
+        Chạy quy trình trên một ảnh đơn và trả về kết quả.
         
-        Returns:
-            Tuple of (output_image_path, features_df, labels)
+        Trả về:
+            Tuple gồm (đường_dẫn_ảnh_đầu_ra, dataframe_đặc_trưng, nhãn)
         """
         image = cv2.imread(str(image_path))
         if image is None:
-            raise FileNotFoundError(f"Could not read image: {image_path}")
+            raise FileNotFoundError(f"Không thể đọc ảnh: {image_path}")
 
         detections = self.detector.detect(image)
         feature_rows = []
@@ -94,53 +80,53 @@ class HybridCellPipeline:
         output_stats_dir: Optional[Path] = None,
     ) -> PipelineOutput:
         """
-        Run complete pipeline with full statistics and reporting.
+        Chạy quy trình hoàn chỉnh với đầy đủ thống kê và báo cáo.
         
-        Args:
-            image_path: Input microscopy image
-            output_image_path: Path to save annotated image
-            output_stats_dir: Directory to save reports (CSV, JSON, TXT)
+        Đối số:
+            image_path: Ảnh hiển vi đầu vào
+            output_image_path: Đường dẫn lưu ảnh đã chú thích
+            output_stats_dir: Thư mục lưu các báo cáo (CSV, JSON, TXT)
         
-        Returns:
-            PipelineOutput with all results
+        Trả về:
+            PipelineOutput chứa tất cả các kết quả
         """
-        # Run detection
+        # Chạy quy trình phát hiện
         image_out_path, features_df, labels = self.run_on_image(
             image_path, output_image_path, save_feature_csv=None
         )
         
-        # Calculate statistics
+        # Tính toán thống kê
         stats = StatisticsCalculator.calculate_statistics(labels, features_df)
         
-        # Generate text report
+        # Tạo báo cáo văn bản
         report_text = StatisticsCalculator.generate_report_text(
             stats, image_name=image_path.stem
         )
         
-        # Save reports if directory provided
+        # Lưu các báo cáo nếu thư mục được cung cấp
         if output_stats_dir is not None:
             output_stats_dir.mkdir(parents=True, exist_ok=True)
             
-            # Text report
+            # Báo cáo văn bản
             report_txt = output_stats_dir / f"{image_path.stem}_report.txt"
             ReportExporter.to_txt(report_text, str(report_txt))
             
-            # CSV summary
+            # Tóm tắt CSV
             report_csv = output_stats_dir / f"{image_path.stem}_summary.csv"
             ReportExporter.to_csv(stats, str(report_csv))
             
-            # JSON report
+            # Báo cáo JSON
             report_json = output_stats_dir / f"{image_path.stem}_report.json"
             ReportExporter.to_json(stats, str(report_json))
             
-            # Excel report (if available)
+            # Báo cáo Excel (nếu có sẵn)
             try:
                 report_excel = output_stats_dir / f"{image_path.stem}_report.xlsx"
                 ReportExporter.to_excel(stats, features_df, str(report_excel))
             except Exception as e:
-                print(f"[WARN] Could not export Excel: {e}")
+                print(f"[WARN] Không thể xuất file Excel: {e}")
             
-            # Full features CSV
+            # CSV chứa đầy đủ đặc trưng
             features_csv = output_stats_dir / f"{image_path.stem}_features.csv"
             if features_df is not None:
                 features_df.to_csv(str(features_csv), index=False)

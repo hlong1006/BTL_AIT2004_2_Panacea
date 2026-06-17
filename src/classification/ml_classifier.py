@@ -19,32 +19,32 @@ ML_MODEL_FILENAME = "best_ml_model.pt"
 
 class MLClassifier:
     def __init__(self):
-        # Improved model configurations for better class separation
+        # Cấu hình mô hình được cải thiện để phân tách lớp tốt hơn
         self.models = {
-            # KNN: Good baseline, fast inference. K=5 often good for 3-class problems
+            # KNN: Cơ sở (baseline) tốt, suy luận nhanh. K=5 thường tốt cho các bài toán 3 lớp
             "knn": Pipeline([
                 ("scaler", StandardScaler()), 
                 ("clf", KNeighborsClassifier(n_neighbors=5, weights='distance'))
             ]),
             
-            # Decision Tree: Interpretable, handles non-linear boundaries
+            # Decision Tree (Cây quyết định): Có thể diễn giải, xử lý các ranh giới phi tuyến tính
             "decision_tree": DecisionTreeClassifier(
-                max_depth=10,  # Increased from 8 for better discrimination
-                min_samples_split=5,  # Prevent overfitting
+                max_depth=10,  # Tăng từ 8 để phân biệt tốt hơn
+                min_samples_split=5,  # Ngăn chặn overfitting (học vẹt)
                 random_state=42
             ),
             
-            # SVM: Best for linear/non-linear separation, especially WBC vs RBC
-            # Using RBF kernel with optimized C parameter
+            # SVM: Tốt nhất cho phân tách tuyến tính/phi tuyến tính, đặc biệt là WBC (Bạch cầu) so với RBC (Hồng cầu)
+            # Sử dụng kernel RBF với tham số C đã được tối ưu hóa
             "svm": Pipeline([
                 ("scaler", StandardScaler()),
                 ("clf", SVC(
                     kernel='rbf',
-                    C=1.0,  # Regularization parameter
-                    gamma='scale',  # Automatic gamma scaling
-                    probability=True,  # Enable probability estimates
+                    C=1.0,  # Tham số điều chuẩn
+                    gamma='scale',  # Tự động thay đổi tỷ lệ gamma
+                    probability=True,  # Bật ước tính xác suất
                     random_state=42,
-                    class_weight='balanced'  # Handle class imbalance
+                    class_weight='balanced'  # Xử lý mất cân bằng lớp
                 ))
             ]),
         }
@@ -121,17 +121,17 @@ class MLClassifier:
     def predict_with_confidence(checkpoint: dict, rows: List[Dict[str, float]], 
                                 confidence_threshold: float = 0.0) -> List[tuple]:
         """
-        Predict with confidence scores.
+        Dự đoán kèm theo điểm số độ tin cậy.
         
-        Returns list of (predicted_label, confidence) tuples.
+        Trả về danh sách các tuple (nhãn_dự_đoán, độ_tin_cậy).
         
-        Args:
-            checkpoint: Model checkpoint
-            rows: List of feature dictionaries
-            confidence_threshold: Minimum confidence (0.0-1.0)
+        Tham số:
+            checkpoint: Checkpoint của mô hình
+            rows: Danh sách các dictionary chứa đặc trưng
+            confidence_threshold: Độ tin cậy tối thiểu (0.0-1.0)
         
-        Returns:
-            List of (label_string, confidence_float) tuples
+        Trả về:
+            Danh sách các tuple (chuỗi_nhãn, số_thực_độ_tin_cậy)
         """
         model = checkpoint["model"]
         feature_columns = checkpoint["feature_columns"]
@@ -144,7 +144,7 @@ class MLClassifier:
         
         predictions = []
         
-        # Try to get probabilities if model supports it
+        # Cố gắng lấy xác suất nếu mô hình có hỗ trợ
         if hasattr(model, 'predict_proba'):
             probs = model.predict_proba(x)
             for prob_row in probs:
@@ -152,13 +152,13 @@ class MLClassifier:
                 max_idx = int(np.argmax(prob_row))
                 label = str(classes[max_idx]) if max_idx < len(classes) else str(max_idx)
                 
-                # If confidence below threshold, mark as uncertain
+                # Nếu độ tin cậy dưới ngưỡng, đánh dấu là không chắc chắn (?)
                 if max_prob < confidence_threshold:
                     label = f"{label}?"
                 
                 predictions.append((label, max_prob))
         else:
-            # Fallback to regular predict
+            # Dự phòng bằng cách sử dụng dự đoán thông thường
             preds = model.predict(x).tolist()
             for pred in preds:
                 predictions.append((str(pred), 1.0))

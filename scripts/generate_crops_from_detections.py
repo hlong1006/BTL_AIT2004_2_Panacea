@@ -1,7 +1,7 @@
 """
-Generate crop images from YOLO detections on training data.
-This script runs inference on all images in data/train/images/
-and saves cropped cells to data/interim/crops/
+Tạo các ảnh cắt (crop) tế bào từ kết quả phát hiện của YOLO trên dữ liệu huấn luyện.
+Tập lệnh này chạy suy luận trên tất cả các ảnh trong thư mục data/train/images/
+và lưu các tế bào đã được cắt vào data/interim/crops/
 """
 
 import argparse
@@ -15,9 +15,9 @@ from src.detection.yolo_detector import YoloDetector
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Generate crop images from YOLO detections")
+    parser = argparse.ArgumentParser(description="Tạo các ảnh cắt (crop) tế bào từ kết quả phát hiện của YOLO")
     
-    # Get project root
+    # Lấy thư mục gốc của dự án
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parent
     
@@ -25,53 +25,53 @@ def parse_args():
         "--model-path",
         type=Path,
         default=project_root / "models" / "yolo" / "best.pt",
-        help="Path to YOLO model (best.pt)",
+        help="Đường dẫn đến mô hình YOLO (best.pt)",
     )
     parser.add_argument(
         "--images-dir",
         type=Path,
         default=project_root / "data" / "train" / "images",
-        help="Directory containing input images",
+        help="Thư mục chứa các ảnh đầu vào",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=project_root / "data" / "interim" / "crops",
-        help="Directory to save crop images",
+        help="Thư mục để lưu các ảnh cắt",
     )
-    parser.add_argument("--conf-threshold", type=float, default=0.25, help="Confidence threshold for YOLO")
+    parser.add_argument("--conf-threshold", type=float, default=0.25, help="Ngưỡng độ tin cậy cho YOLO")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
 
-    # Ensure output directory exists
+    # Đảm bảo thư mục đầu ra tồn tại
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize detector
+    # Khởi tạo bộ phát hiện
     detector = YoloDetector(model_path=args.model_path, conf_threshold=args.conf_threshold)
 
-    # Get all images
+    # Lấy tất cả các đường dẫn ảnh
     image_paths = sorted([p for p in args.images_dir.glob("*") if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp"}])
 
     if not image_paths:
-        print(f"[ERROR] No images found in {args.images_dir}")
+        print(f"[LỖI] Không tìm thấy ảnh nào trong thư mục {args.images_dir}")
         return
 
-    print(f"Found {len(image_paths)} images. Starting crop generation...")
+    print(f"Tìm thấy {len(image_paths)} ảnh. Bắt đầu quá trình tạo ảnh cắt...")
     total_crops = 0
 
-    for img_path in tqdm(image_paths, desc="Processing images"):
+    for img_path in tqdm(image_paths, desc="Đang xử lý ảnh"):
         image = cv2.imread(str(img_path))
         if image is None:
-            print(f"[WARN] Could not read image: {img_path}")
+            print(f"[CẢNH BÁO] Không thể đọc ảnh: {img_path}")
             continue
 
-        # Run detection
+        # Chạy quy trình phát hiện
         detections = detector.detect(image)
 
-        # Save crops
+        # Lưu các ảnh cắt
         for idx, det in enumerate(detections):
             crop = detector.crop_detection(image, det)
             crop_name = f"{img_path.stem}_cell_{idx:04d}.png"
@@ -79,8 +79,8 @@ def main() -> None:
             cv2.imwrite(str(crop_path), crop)
             total_crops += 1
 
-    print(f"\n✓ Successfully generated {total_crops} crop images")
-    print(f"  Saved to: {args.output_dir}")
+    print(f"\n✓ Đã tạo thành công {total_crops} ảnh cắt tế bào")
+    print(f"  Đã lưu tại: {args.output_dir}")
 
 
 if __name__ == "__main__":

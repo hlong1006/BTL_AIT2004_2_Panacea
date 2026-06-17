@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Blood Cell Detection & Classification System
-Main Application Interface
+Hệ thống Phát hiện & Phân loại Tế bào Máu
+Giao diện Ứng dụng Chính
 
-This application provides an easy-to-use interface for blood cell analysis
-combining YOLOv8 detection with Machine Learning classification.
+Ứng dụng này cung cấp một giao diện dễ sử dụng để phân tích tế bào máu,
+kết hợp việc phát hiện bằng YOLOv8 với phân loại bằng Học máy (Machine Learning).
 
-Usage:
+Cách sử dụng:
     python app.py --image sample.png
     python app.py --folder ./images
 """
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# Ensure src is importable
+# Đảm bảo src có thể import được
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.classification.ml_classifier import ML_MODEL_FILENAME
@@ -26,7 +26,7 @@ from src.utils.statistics import StatisticsCalculator, ReportExporter
 
 
 class BloodCellAnalysisApp:
-    """Main application for blood cell analysis."""
+    """Ứng dụng chính để phân tích tế bào máu."""
     
     def __init__(
         self,
@@ -38,31 +38,31 @@ class BloodCellAnalysisApp:
         yolo_max_det: int = 500,
         verbose: bool = False,
     ):
-        """Initialize the application."""
+        """Khởi tạo ứng dụng."""
         self.verbose = verbose
         
-        # Set defaults
+        # Đặt các giá trị mặc định
         if yolo_model_path is None:
             yolo_model_path = PATHS.yolo_models / "best.pt"
         if ml_model_path is None:
             ml_model_path = PATHS.ml_models / ML_MODEL_FILENAME
         
-        # Validate paths
+        # Xác thực các đường dẫn
         if not ml_model_path.exists():
-            raise FileNotFoundError(f"ML model not found: {ml_model_path}")
+            raise FileNotFoundError(f"Không tìm thấy mô hình ML: {ml_model_path}")
         
-        # Adjust YOLO path if it doesn't exist
+        # Điều chỉnh đường dẫn YOLO nếu nó không tồn tại
         yolo_exists = yolo_model_path.exists()
         
         if self.verbose:
-            print("📦 Initializing Blood Cell Analysis System...")
-            print(f"   ML Model: {ml_model_path}")
+            print(" Đang khởi tạo Hệ thống Phân tích Tế bào Máu...")
+            print(f"   Mô hình ML: {ml_model_path}")
             if yolo_exists:
-                print(f"   YOLO Model: {yolo_model_path}")
+                print(f"   Mô hình YOLO: {yolo_model_path}")
             else:
-                print(f"   ⚠️  YOLO Model not found (will use fallback)")
+                print(f"     Không tìm thấy Mô hình YOLO (sẽ sử dụng phương án dự phòng)")
         
-        # Initialize pipeline
+        # Khởi tạo quy trình (pipeline)
         yolo_to_load = yolo_model_path if yolo_exists else None
         self.pipeline = HybridCellPipeline(
             yolo_model_path=yolo_to_load,
@@ -80,35 +80,35 @@ class BloodCellAnalysisApp:
         save_reports: bool = True,
     ) -> dict:
         """
-        Analyze a single blood sample image.
+        Phân tích một ảnh mẫu máu đơn lẻ.
         
-        Args:
-            image_path: Path to the image file
-            output_dir: Directory to save results
-            save_reports: Whether to save detailed reports
+        Tham số:
+            image_path: Đường dẫn đến tệp ảnh
+            output_dir: Thư mục để lưu kết quả
+            save_reports: Có lưu các báo cáo chi tiết hay không
         
-        Returns:
-            Dictionary with analysis results
+        Trả về:
+            Dictionary chứa kết quả phân tích
         """
-        # Validate input
+        # Xác thực đầu vào
         if not image_path.exists():
-            raise FileNotFoundError(f"Image not found: {image_path}")
+            raise FileNotFoundError(f"Không tìm thấy ảnh: {image_path}")
         
         if self.verbose:
-            print(f"\n🔍 Analyzing: {image_path.name}")
+            print(f"\n Đang phân tích: {image_path.name}")
         
-        # Create output paths
+        # Tạo đường dẫn đầu ra
         output_image_path = output_dir / "images" / f"{image_path.stem}_annotated.png"
         output_reports_dir = (output_dir / "reports" / image_path.stem) if save_reports else None
         
-        # Run pipeline
+        # Chạy quy trình
         result = self.pipeline.run_on_image_full(
             image_path=image_path,
             output_image_path=output_image_path,
             output_stats_dir=output_reports_dir,
         )
         
-        # Prepare output
+        # Chuẩn bị đầu ra
         output = {
             "success": True,
             "image_name": image_path.name,
@@ -133,18 +133,18 @@ class BloodCellAnalysisApp:
         save_reports: bool = True,
     ) -> dict:
         """
-        Analyze multiple images in a folder.
+        Phân tích nhiều ảnh trong một thư mục.
         
-        Args:
-            folder_path: Path to folder containing images
-            output_dir: Directory to save results
-            recursive: Whether to search subdirectories
-            save_reports: Whether to save detailed reports
+        Tham số:
+            folder_path: Đường dẫn đến thư mục chứa ảnh
+            output_dir: Thư mục để lưu kết quả
+            recursive: Có tìm kiếm đệ quy trong các thư mục con hay không
+            save_reports: Có lưu các báo cáo chi tiết hay không
         
-        Returns:
-            Dictionary with batch analysis results
+        Trả về:
+            Dictionary chứa kết quả phân tích hàng loạt
         """
-        # Find images
+        # Tìm ảnh
         pattern = "**/*" if recursive else "*"
         image_files = [
             f for f in folder_path.glob(pattern)
@@ -152,12 +152,12 @@ class BloodCellAnalysisApp:
         ]
         
         if not image_files:
-            raise FileNotFoundError(f"No images found in {folder_path}")
+            raise FileNotFoundError(f"Không tìm thấy ảnh nào trong {folder_path}")
         
         if self.verbose:
-            print(f"\n📁 Found {len(image_files)} image(s)")
+            print(f"\n Đã tìm thấy {len(image_files)} ảnh")
         
-        # Analyze each image
+        # Phân tích từng ảnh
         results = {
             "total_images": len(image_files),
             "successful": 0,
@@ -178,23 +178,23 @@ class BloodCellAnalysisApp:
                 results["successful"] += 1
                 results["total_cells"] += result["total_cells"]
                 
-                # Aggregate cell counts
+                # Tổng hợp số lượng tế bào
                 for cell_type, count in result["cell_counts"].items():
                     results["cell_counts"][cell_type] = results["cell_counts"].get(cell_type, 0) + count
                 
                 if self.verbose:
-                    print(f"✓ ({result['total_cells']} cells)")
+                    print(f" ({result['total_cells']} tế bào)")
                 else:
                     print(".", end="", flush=True)
             
             except Exception as e:
                 results["failed"] += 1
                 if self.verbose:
-                    print(f"❌ {e}")
+                    print(f"Error {e}")
                 else:
                     print("✗", end="", flush=True)
         
-        # Calculate averages
+        # Tính số liệu trung bình
         if results["successful"] > 0:
             results["avg_cells_per_image"] = results["total_cells"] / results["successful"]
         else:
@@ -203,23 +203,23 @@ class BloodCellAnalysisApp:
         return results
     
     def print_analysis_report(self, analysis_result: dict) -> None:
-        """Print analysis results to console."""
+        """In kết quả phân tích ra bảng điều khiển (console)."""
         print("\n" + "=" * 70)
-        print("✅ ANALYSIS REPORT")
+        print(" BÁO CÁO PHÂN TÍCH")
         print("=" * 70)
         
         if "report_text" in analysis_result:
-            # Single image result
+            # Kết quả ảnh đơn
             print(analysis_result["report_text"])
         else:
-            # Batch result
-            print(f"\nTotal Images:          {analysis_result['total_images']}")
-            print(f"Successfully Analyzed: {analysis_result['successful']}")
-            print(f"Failed:                {analysis_result['failed']}")
-            print(f"Total Cells Detected:  {analysis_result['total_cells']}")
-            print(f"Average per Image:     {analysis_result['avg_cells_per_image']:.1f}")
+            # Kết quả hàng loạt
+            print(f"\nTổng số ảnh:           {analysis_result['total_images']}")
+            print(f"Phân tích thành công:  {analysis_result['successful']}")
+            print(f"Thất bại:              {analysis_result['failed']}")
+            print(f"Tổng số tế bào phát hiện: {analysis_result['total_cells']}")
+            print(f"Trung bình mỗi ảnh:    {analysis_result['avg_cells_per_image']:.1f}")
             
-            print("\nCell Type Distribution:")
+            print("\nPhân bổ loại tế bào:")
             for cell_type, count in analysis_result["cell_counts"].items():
                 pct = (count / analysis_result["total_cells"] * 100) if analysis_result["total_cells"] > 0 else 0
                 print(f"  {cell_type:15} {count:5d} ({pct:6.2f}%)")
@@ -229,20 +229,20 @@ class BloodCellAnalysisApp:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Blood Cell Detection & Classification System",
+        description="Hệ thống Phát hiện & Phân loại Tế bào Máu",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  # Analyze single image
+Ví dụ:
+  # Phân tích một ảnh
   python app.py --image sample.png --output results/
 
-  # Analyze folder
+  # Phân tích cả thư mục
   python app.py --folder images/ --output results/ --recursive
 
-  # With custom models
+  # Với các mô hình tùy chỉnh
   python app.py --image sample.png --yolo models/custom_yolo.pt --ml models/custom_ml.pt
 
-  # Verbose output
+  # In chi tiết đầu ra
   python app.py --image sample.png --output results/ --verbose
         """
     )
@@ -250,61 +250,61 @@ Examples:
     parser.add_argument(
         "--image",
         type=Path,
-        help="Path to input image file (single image mode)",
+        help="Đường dẫn đến tệp ảnh đầu vào (chế độ ảnh đơn)",
     )
     parser.add_argument(
         "--folder",
         type=Path,
-        help="Path to folder containing images (batch mode)",
+        help="Đường dẫn đến thư mục chứa ảnh (chế độ hàng loạt)",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=Path("outputs/analysis_results"),
-        help="Output directory for results (default: outputs/analysis_results)",
+        help="Thư mục đầu ra cho kết quả (mặc định: outputs/analysis_results)",
     )
     parser.add_argument(
         "--yolo-model",
         type=Path,
-        help="Path to YOLO model (default: models/yolo/best.pt)",
+        help="Đường dẫn đến mô hình YOLO (mặc định: models/yolo/best.pt)",
     )
     parser.add_argument(
         "--ml-model",
         type=Path,
-        help="Path to ML model (default: models/ml/best_ml_model.pt)",
+        help="Đường dẫn đến mô hình ML (mặc định: models/ml/best_ml_model.pt)",
     )
     parser.add_argument(
         "--recursive",
         action="store_true",
-        help="Recursively search subdirectories (for folder mode)",
+        help="Tìm kiếm đệ quy trong các thư mục con (cho chế độ thư mục)",
     )
     parser.add_argument(
         "--no-reports",
         action="store_true",
-        help="Skip saving detailed reports (only save annotated images)",
+        help="Bỏ qua việc lưu các báo cáo chi tiết (chỉ lưu các ảnh đã chú thích)",
     )
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Print detailed output",
+        help="In chi tiết đầu ra",
     )
     parser.add_argument(
         "--conf",
         type=float,
         default=0.12,
-        help="YOLO confidence threshold (default: 0.12, lower = more detections)",
+        help="Ngưỡng độ tin cậy YOLO (mặc định: 0.12, thấp hơn = phát hiện nhiều hơn)",
     )
     parser.add_argument(
         "--iou",
         type=float,
         default=0.45,
-        help="YOLO NMS IoU threshold (default: 0.45)",
+        help="Ngưỡng IoU của YOLO NMS (mặc định: 0.45)",
     )
     parser.add_argument(
         "--imgsz",
         type=int,
         default=416,
-        help="YOLO inference image size, should match training (default: 416)",
+        help="Kích thước ảnh suy luận của YOLO, nên khớp với lúc huấn luyện (mặc định: 416)",
     )
     
     return parser.parse_args()
@@ -313,17 +313,17 @@ Examples:
 def main():
     args = parse_args()
     
-    # Validate arguments
+    # Xác thực các đối số
     if not args.image and not args.folder:
-        print("❌ Error: Please specify either --image or --folder")
+        print(" Lỗi: Vui lòng chỉ định --image hoặc --folder")
         sys.exit(1)
     
     if args.image and args.folder:
-        print("❌ Error: Cannot specify both --image and --folder")
+        print(" Lỗi: Không thể chỉ định cả --image và --folder cùng lúc")
         sys.exit(1)
     
     try:
-        # Initialize app
+        # Khởi tạo ứng dụng
         app = BloodCellAnalysisApp(
             yolo_model_path=args.yolo_model,
             ml_model_path=args.ml_model,
@@ -333,21 +333,21 @@ def main():
             verbose=args.verbose,
         )
         
-        # Create output directory
+        # Tạo thư mục đầu ra
         args.output.mkdir(parents=True, exist_ok=True)
         
-        # Run analysis
+        # Chạy phân tích
         if args.image:
-            print(f"🩺 Blood Cell Analysis System - Single Image Mode")
-            print(f"   Image: {args.image}")
+            print(f" Hệ thống Phân tích Tế bào Máu - Chế độ Ảnh Đơn")
+            print(f"   Ảnh: {args.image}")
             result = app.analyze_image(
                 image_path=args.image,
                 output_dir=args.output,
                 save_reports=not args.no_reports,
             )
         else:
-            print(f"🩺 Blood Cell Analysis System - Batch Processing Mode")
-            print(f"   Folder: {args.folder}")
+            print(f" Hệ thống Phân tích Tế bào Máu - Chế độ Xử lý Hàng loạt")
+            print(f"   Thư mục: {args.folder}")
             result = app.analyze_folder(
                 folder_path=args.folder,
                 output_dir=args.output,
@@ -355,17 +355,17 @@ def main():
                 save_reports=not args.no_reports,
             )
         
-        # Print results
+        # In kết quả
         app.print_analysis_report(result)
         
-        # Print output locations
-        print(f"\n📁 Results saved to: {args.output}")
+        # In vị trí đầu ra
+        print(f"\n Các kết quả đã được lưu tại: {args.output}")
         
     except FileNotFoundError as e:
-        print(f"❌ Error: {e}")
+        print(f" Lỗi: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f" Lỗi không xác định: {e}")
         import traceback
         if args.verbose:
             traceback.print_exc()

@@ -1,4 +1,4 @@
-"""Build features CSV and train ML classifier (YOLO must already exist)."""
+"""Xây dựng tệp CSV đặc trưng và huấn luyện bộ phân loại ML (Mô hình YOLO phải tồn tại trước đó)."""
 
 import subprocess
 import sys
@@ -23,12 +23,16 @@ def main() -> None:
     if not yolo_dst.exists() and yolo_src.exists():
         yolo_dst.parent.mkdir(parents=True, exist_ok=True)
         yolo_dst.write_bytes(yolo_src.read_bytes())
-        print(f"Copied YOLO weights -> {yolo_dst}")
+        print(f"Đã sao chép trọng số YOLO -> {yolo_dst}")
 
+    # 1. Trích xuất đặc trưng từ nhãn để xây dựng tập dữ liệu huấn luyện ML
     run([py, "scripts/build_train_features_from_labels.py"])
+    
+    # 2. Huấn luyện các mô hình phân loại ML cổ điển (SVM, KNN, DT)
     run([py, "scripts/train_ml.py"])
-    print("\nML pipeline done. Run inference:")
-    print("  python scripts/infer_image.py --image <path-to-image>")
+    
+    print("\nQuy trình ML đã hoàn thành. Chạy thử nghiệm suy luận bằng lệnh sau:")
+    print("  python scripts/infer_image.py --image <đường-dẫn-tới-ảnh>")
 
 
 if __name__ == "__main__":

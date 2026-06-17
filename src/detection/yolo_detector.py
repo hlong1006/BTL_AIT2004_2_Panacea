@@ -18,14 +18,14 @@ class Detection:
 
 
 class YoloDetector:
-    # Improved defaults for better detection of small cells and reduced misclassification
-    # - Lower confidence threshold catches more small cells (previously 0.12)
-    # - Higher max_det for dense smears with many cells
-    # - Multi-scale detection support for better recall on small objects
-    DEFAULT_CONF = 0.08  # Lowered from 0.12 for better small cell detection
-    DEFAULT_IOU = 0.40   # Slightly reduced for better separation
+    # Cải thiện các giá trị mặc định để phát hiện tế bào nhỏ tốt hơn và giảm phân loại sai
+    # - Ngưỡng độ tin cậy thấp hơn giúp bắt được nhiều tế bào nhỏ hơn (trước đây là 0.12)
+    # - max_det cao hơn cho các tiêu bản dày đặc với nhiều tế bào
+    # - Hỗ trợ phát hiện đa tỷ lệ để có độ phủ (recall) tốt hơn trên các đối tượng nhỏ
+    DEFAULT_CONF = 0.08  # Giảm từ 0.12 để phát hiện tế bào nhỏ tốt hơn
+    DEFAULT_IOU = 0.40   # Giảm một chút để phân tách tốt hơn
     DEFAULT_IMGSZ = 416
-    DEFAULT_MAX_DET = 800  # Increased from 500 for dense smears
+    DEFAULT_MAX_DET = 800  # Tăng từ 500 cho các tiêu bản dày đặc
 
     def __init__(
         self,
@@ -83,13 +83,13 @@ class YoloDetector:
                 cls_id = int(box.cls[0].item())
                 conf = float(box.conf[0].item())
                 
-                # Calculate area and apply minimum size filter
-                # This helps filter out noise while preserving small but real cells
+                # Tính diện tích và áp dụng bộ lọc kích thước tối thiểu
+                # Điều này giúp lọc nhiễu trong khi vẫn giữ lại các tế bào nhỏ nhưng có thực
                 width = x2 - x1
                 height = y2 - y1
                 area = width * height
                 
-                # Minimum 3x3 px to be considered a real cell
+                # Tối thiểu 3x3 px để được coi là một tế bào thực
                 min_area = 9
                 if area < min_area:
                     continue
@@ -106,15 +106,15 @@ class YoloDetector:
                     )
                 )
         
-        # Post-process: merge very nearby detections to reduce duplicates
+        # Hậu xử lý: gộp các phát hiện rất gần nhau để giảm trùng lặp
         detections = self._merge_nearby_detections(detections)
         return detections
     
     @staticmethod
     def _merge_nearby_detections(detections: List[Detection], threshold: float = 0.3) -> List[Detection]:
         """
-        Merge nearby detections that likely represent the same cell.
-        Uses IoU (Intersection over Union) threshold.
+        Gộp các phát hiện gần nhau có khả năng là cùng một tế bào.
+        Sử dụng ngưỡng IoU (Intersection over Union - Tỷ lệ phần giao trên phần hợp).
         """
         if len(detections) <= 1:
             return detections
@@ -131,13 +131,13 @@ class YoloDetector:
                 if j in used:
                     continue
                 
-                # Calculate IoU
+                # Tính IoU
                 iou = YoloDetector._calculate_iou(det1, det2)
                 if iou > threshold:
                     group.append(det2)
                     used.add(j)
             
-            # Merge group by averaging coordinates (weighted by confidence)
+            # Gộp nhóm bằng cách lấy trung bình các tọa độ (được tính trọng số theo độ tin cậy)
             if len(group) > 1:
                 merged_det = YoloDetector._average_detections(group)
             else:
@@ -150,11 +150,11 @@ class YoloDetector:
     
     @staticmethod
     def _calculate_iou(det1: Detection, det2: Detection) -> float:
-        """Calculate Intersection over Union between two detections."""
+        """Tính Tỷ lệ phần giao trên phần hợp (IoU) giữa hai phát hiện."""
         x1_min, y1_min, x1_max, y1_max = det1.x1, det1.y1, det1.x2, det1.y2
         x2_min, y2_min, x2_max, y2_max = det2.x1, det2.y1, det2.x2, det2.y2
         
-        # Intersection
+        # Phần giao (Intersection)
         inter_xmin = max(x1_min, x2_min)
         inter_ymin = max(y1_min, y2_min)
         inter_xmax = min(x1_max, x2_max)
@@ -165,7 +165,7 @@ class YoloDetector:
         
         inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
         
-        # Union
+        # Phần hợp (Union)
         det1_area = (x1_max - x1_min) * (y1_max - y1_min)
         det2_area = (x2_max - x2_min) * (y2_max - y2_min)
         union_area = det1_area + det2_area - inter_area
@@ -177,7 +177,7 @@ class YoloDetector:
     
     @staticmethod
     def _average_detections(detections: List[Detection]) -> Detection:
-        """Average coordinates and confidence of multiple detections."""
+        """Lấy trung bình các tọa độ và độ tin cậy của nhiều phát hiện."""
         total_conf = sum(d.confidence for d in detections)
         avg_conf = total_conf / len(detections)
         
@@ -205,12 +205,12 @@ class YoloDetector:
         y2 = max(1, min(det.y2, h))
         return image[y1:y2, x1:x2]
 
-    # BGR — màu tương phản trên nền lam máu (hồng/nhạt)
+    # BGR (Xanh lam, Xanh lục, Đỏ)
     CLASS_COLORS_BGR = {
-        "Platelets": (0, 165, 255),   # cam
-        "RBC": (0, 0, 255),           # đỏ
-        "WBC": (255, 80, 0),          # xanh dương đậm
-        "cell": (0, 255, 255),        # vàng (fallback)
+        "Platelets": (0, 165, 255),   
+        "RBC": (0, 0, 255),           
+        "WBC": (255, 80, 0),          
+        "cell": (0, 255, 255),        
     }
 
     @staticmethod

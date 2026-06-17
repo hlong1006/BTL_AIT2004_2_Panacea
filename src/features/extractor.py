@@ -5,14 +5,14 @@ import numpy as np
 
 
 class CellFeatureExtractor:
-    MIN_SIZE = 10  # Minimum image size to process
+    MIN_SIZE = 10  # Kích thước hình ảnh tối thiểu để xử lý
     
     @staticmethod
     def _make_mask(cell_bgr: np.ndarray) -> np.ndarray:
-        # Validate image size
+        # Xác thực kích thước hình ảnh
         h, w = cell_bgr.shape[:2]
         if h < CellFeatureExtractor.MIN_SIZE or w < CellFeatureExtractor.MIN_SIZE:
-            # Return empty mask for small images
+            # Trả về mặt nạ rỗng cho các hình ảnh nhỏ
             return np.zeros((h, w), dtype=np.uint8)
         
         try:
@@ -28,10 +28,10 @@ class CellFeatureExtractor:
     @staticmethod
     def _calculate_eccentricity(contour: np.ndarray) -> float:
         """
-        Calculate eccentricity (shape descriptor).
-        Measures how elongated a shape is. 
-        Circle: ~0, Elongated: closer to 1
-        Helps distinguish WBC (often more irregular) from RBC (more circular)
+        Tính độ lệch tâm (bộ mô tả hình dạng).
+        Đo lường mức độ kéo dài của một hình dạng. 
+        Hình tròn: ~0, Kéo dài: gần với 1
+        Giúp phân biệt WBC (Bạch cầu - thường bất thường hơn) với RBC (Hồng cầu - tròn hơn)
         """
         if len(contour) < 5:
             return 0.0
@@ -43,7 +43,7 @@ class CellFeatureExtractor:
             if minor == 0:
                 return 0.0
             
-            # Eccentricity = sqrt(1 - (minor/major)^2)
+            # Độ lệch tâm = sqrt(1 - (trục_nhỏ/trục_lớn)^2)
             ratio = minor / major if major > 0 else 0
             eccentricity = float(np.sqrt(1 - ratio**2))
             return eccentricity
@@ -53,10 +53,10 @@ class CellFeatureExtractor:
     @staticmethod
     def _calculate_solidity(contour: np.ndarray, area: float) -> float:
         """
-        Calculate solidity (compactness).
-        Solidity = contour_area / convex_hull_area
-        Values closer to 1 = more compact/solid shape
-        RBC typically has higher solidity than WBC
+        Tính độ đặc (độ nén/độ rắn).
+        Độ đặc = diện_tích_đường_viền / diện_tích_bao_lồi
+        Giá trị càng gần 1 = hình dạng càng đặc/nén
+        RBC thường có độ đặc cao hơn WBC
         """
         if area == 0:
             return 0.0
@@ -76,13 +76,13 @@ class CellFeatureExtractor:
     @staticmethod
     def _calculate_hu_moments(contour: np.ndarray) -> tuple:
         """
-        Calculate Hu Moments for shape matching.
-        First 3 moments are invariant to translation, scale, and rotation.
-        Helps distinguish cell types by their shape signature.
+        Tính toán các Mô-men Hu để khớp hình dạng.
+        3 mô-men đầu tiên bất biến đối với phép tịnh tiến, thu phóng và phép quay.
+        Giúp phân biệt các loại tế bào bằng đặc trưng hình dạng của chúng.
         """
         try:
             moments = cv2.HuMoments(contour)
-            # Return first 3 moments (most discriminative)
+            # Trả về 3 mô-men đầu tiên (có tính phân biệt cao nhất)
             return tuple(float(abs(m[0])) for m in moments[:3])
         except Exception:
             return (0.0, 0.0, 0.0)
@@ -90,8 +90,8 @@ class CellFeatureExtractor:
     @staticmethod
     def _calculate_color_stats(cell_bgr: np.ndarray, mask: np.ndarray) -> dict:
         """
-        Calculate color statistics including variance.
-        WBC often has different color intensity/variance than RBC.
+        Tính toán thống kê màu sắc bao gồm cả phương sai.
+        WBC thường có cường độ/phương sai màu sắc khác với RBC.
         """
         if cv2.countNonZero(mask) == 0:
             return {
@@ -102,12 +102,12 @@ class CellFeatureExtractor:
             }
         
         try:
-            # BGR standard deviation
+            # Độ lệch chuẩn BGR
             b_std = float(np.std(cell_bgr[:, :, 0][mask > 0]))
             g_std = float(np.std(cell_bgr[:, :, 1][mask > 0]))
             r_std = float(np.std(cell_bgr[:, :, 2][mask > 0]))
             
-            # HSV standard deviation
+            # Độ lệch chuẩn HSV
             hsv = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2HSV)
             h_std = float(np.std(hsv[:, :, 0][mask > 0]))
             
@@ -128,8 +128,8 @@ class CellFeatureExtractor:
     @staticmethod
     def _calculate_extent(contour: np.ndarray, area: float) -> float:
         """
-        Calculate extent (contour area / bounding rect area).
-        Helps identify cell shape regularity.
+        Tính toán phạm vi (diện tích đường viền / diện tích hình chữ nhật bao quanh).
+        Giúp xác định mức độ đều đặn của hình dạng tế bào.
         """
         if area == 0:
             return 0.0
@@ -148,8 +148,8 @@ class CellFeatureExtractor:
 
     def extract(self, cell_bgr: np.ndarray) -> Dict[str, float]:
         """
-        Extract comprehensive set of features for cell classification.
-        Enhanced with shape descriptors to better distinguish RBC, WBC, and Platelets.
+        Trích xuất tập hợp các đặc trưng toàn diện để phân loại tế bào.
+        Được tăng cường với các bộ mô tả hình dạng để phân biệt tốt hơn RBC, WBC và Tiểu cầu (Platelets).
         """
         mask = self._make_mask(cell_bgr)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -169,7 +169,7 @@ class CellFeatureExtractor:
             if perimeter > 0:
                 circularity = float((4.0 * np.pi * area) / (perimeter ** 2))
             
-            # New shape descriptors
+            # Các bộ mô tả hình dạng mới
             eccentricity = self._calculate_eccentricity(contour)
             solidity = self._calculate_solidity(contour, area)
             extent = self._calculate_extent(contour, area)
@@ -181,16 +181,16 @@ class CellFeatureExtractor:
 
         texture_laplacian = float(cv2.Laplacian(cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var())
         
-        # Color statistics
+        # Thống kê màu sắc
         color_stats = self._calculate_color_stats(cell_bgr, mask)
 
         return {
-            # Original morphological features
+            # Các đặc trưng hình thái học ban đầu
             "area": area,
             "perimeter": perimeter,
             "circularity": circularity,
             
-            # New shape descriptors (help distinguish WBC from RBC)
+            # Các bộ mô tả hình dạng mới (giúp phân biệt WBC với RBC)
             "eccentricity": eccentricity,
             "solidity": solidity,
             "extent": extent,
@@ -198,7 +198,7 @@ class CellFeatureExtractor:
             "hu_moment_2": hu_m2,
             "hu_moment_3": hu_m3,
             
-            # Original color features
+            # Các đặc trưng màu sắc ban đầu
             "mean_b": float(mean_bgr[0]),
             "mean_g": float(mean_bgr[1]),
             "mean_r": float(mean_bgr[2]),
@@ -207,7 +207,7 @@ class CellFeatureExtractor:
             "mean_v": float(mean_hsv[2]),
             "texture_laplacian_var": texture_laplacian,
             
-            # New color statistics
+            # Các thống kê màu sắc mới
             "color_std_b": color_stats["color_std_b"],
             "color_std_g": color_stats["color_std_g"],
             "color_std_r": color_stats["color_std_r"],

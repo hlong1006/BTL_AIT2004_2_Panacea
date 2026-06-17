@@ -11,12 +11,14 @@ def main() -> None:
     model_out = PATHS.ml_models / ML_MODEL_FILENAME
 
     trainer = MLClassifier()
+    # Huấn luyện và lựa chọn mô hình tốt nhất dựa trên tập đặc trưng
     reports = trainer.train_and_select(feature_csv, target_col="label")
 
     df = pd.read_csv(feature_csv)
     classes = sorted(df["label"].dropna().unique().tolist())
     best_name = reports["best_model"]
 
+    # Lưu checkpoint của mô hình có hiệu năng tốt nhất
     MLClassifier.save_model(
         trainer.models["best"],
         model_out,
@@ -25,10 +27,10 @@ def main() -> None:
         classes=classes,
     )
 
-    print("=== MODEL REPORTS ===")
+    print("=== BÁO CÁO HIỆU NĂNG MÔ HÌNH ===")
     for name, report in reports.items():
         print(f"\n[{name}]\n{report}")
-    print(f"\nSaved best model to: {model_out}")
+    print(f"\nĐã lưu mô hình tốt nhất tại: {model_out}")
 
 
 if __name__ == "__main__":

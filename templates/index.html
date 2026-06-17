@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blood Cell Analysis System</title>
+    <title>Hệ thống Phân tích Tế bào Máu</title>
     <style>
         * {
             margin: 0;
@@ -273,74 +273,69 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
-            <h1>🩺 Blood Cell Analysis System</h1>
-            <p>AI-Powered Detection & Classification of Blood Cells</p>
+            <h1> Hệ thống Phân tích Tế bào Máu</h1>
+            <p>Phát hiện & Phân loại Tế bào Máu bằng công nghệ AI</p>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Upload Section -->
             <div class="card">
-                <h2>📤 Upload Image</h2>
+                <h2> Tải ảnh lên</h2>
                 
                 <div id="status" class="status hidden"></div>
                 <div class="progress-bar"><div class="progress" id="progressBar"></div></div>
 
                 <div class="upload-area" id="uploadArea">
-                    <p>📁 Click or drag image here</p>
-                    <p style="font-size: 0.9em; color: #999;">JPG, PNG, BMP (Max 50MB)</p>
+                    <p> Nhấp hoặc kéo thả ảnh vào đây</p>
+                    <p style="font-size: 0.9em; color: #999;">JPG, PNG, BMP (Tối đa 50MB)</p>
                     <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp">
                 </div>
 
                 <button onclick="document.getElementById('fileInput').click()">
-                    Choose File
+                    Chọn tệp
                 </button>
 
                 <div id="info" class="info-box hidden">
-                    <p><strong>System Status:</strong> Ready</p>
-                    <p>Models: YOLOv8 + ML Classification</p>
+                    <p><strong>Trạng thái hệ thống:</strong> Sẵn sàng</p>
+                    
                 </div>
             </div>
 
-            <!-- Instructions -->
             <div class="card">
-                <h2>ℹ️ How It Works</h2>
+                <h2> Cách thức hoạt động</h2>
                 <p style="margin: 10px 0; line-height: 1.6;">
-                    <strong>Step 1:</strong> Upload blood sample microscopy image<br>
-                    <strong>Step 2:</strong> YOLOv8 detects cell locations<br>
-                    <strong>Step 3:</strong> OpenCV extracts features<br>
-                    <strong>Step 4:</strong> ML model classifies cells<br>
-                    <strong>Step 5:</strong> View results & download reports
+                    <strong>Bước 1:</strong> Tải lên ảnh vi thể mẫu máu<br>
+                    <strong>Bước 2:</strong> YOLOv8 phát hiện vị trí các tế bào<br>
+                    <strong>Bước 3:</strong> OpenCV trích xuất đặc trưng<br>
+                    <strong>Bước 4:</strong> Mô hình Machine Learning phân loại tế bào<br>
+                    <strong>Bước 5:</strong> Xem kết quả & tải báo cáo xuống
                 </p>
                 
-                <h3 style="margin-top: 20px; color: #667eea;">Cell Types</h3>
+                <h3 style="margin-top: 20px; color: #667eea;">Các loại tế bào</h3>
                 <div class="stat-box" style="text-align: left; margin: 10px 0;">
-                    <p>🔴 <strong>RBC</strong> (Red Blood Cells) - Normal oxygen carriers</p>
-                    <p>⚪ <strong>WBC</strong> (White Blood Cells) - Immune system cells</p>
-                    <p>🟡 <strong>Platelets</strong> - Blood clotting cells</p>
+                    <p>🔴 <strong>RBC</strong> (Hồng cầu) - Tế bào vận chuyển oxy</p>
+                    <p>⚪ <strong>WBC</strong> (Bạch cầu) - Tế bào hệ miễn dịch</p>
+                    <p>🟡 <strong>Platelets</strong> (Tiểu cầu) - Tế bào đông máu</p>
                 </div>
             </div>
         </div>
 
-        <!-- Results Section -->
         <div class="results">
-            <h2>📊 Analysis Results</h2>
+            <h2> Kết quả phân tích</h2>
             
             <div id="resultContainer" class="hidden">
                 <div id="resultContent"></div>
             </div>
 
             <div id="noResults" style="text-align: center; color: #999; padding: 40px;">
-                <p>No analysis performed yet</p>
-                <p style="font-size: 0.9em;">Upload an image to get started</p>
+                <p>Chưa có phân tích nào được thực hiện</p>
+                <p style="font-size: 0.9em;">Tải một bức ảnh lên để bắt đầu</p>
             </div>
         </div>
     </div>
 
     <script>
-        // DOM Elements
+        // Các phần tử DOM
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const status = document.getElementById('status');
@@ -350,7 +345,7 @@
         const resultContent = document.getElementById('resultContent');
         const info = document.getElementById('info');
 
-        // Upload Area Events
+        // Các sự kiện khu vực tải lên
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -371,24 +366,24 @@
 
         fileInput.addEventListener('change', uploadFile);
 
-        // Upload Function
+        // Hàm tải lên
         async function uploadFile() {
             const file = fileInput.files[0];
             if (!file) return;
 
-            // Show status
+            // Hiển thị trạng thái
             status.classList.remove('hidden', 'error', 'success');
             status.classList.add('loading');
-            status.textContent = '🔄 Processing...';
+            status.textContent = ' Đang xử lý...';
             noResults.classList.add('hidden');
             resultContainer.classList.add('hidden');
 
-            // Create form data
+            // Tạo form data
             const formData = new FormData();
             formData.append('file', file);
 
             try {
-                // Upload
+                // Tải lên
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData
@@ -400,25 +395,25 @@
                     displayResults(data);
                     status.classList.remove('loading');
                     status.classList.add('success');
-                    status.textContent = '✅ Analysis Complete!';
+                    status.textContent = ' Phân tích hoàn tất!';
                 } else {
                     status.classList.remove('loading');
                     status.classList.add('error');
-                    status.textContent = '❌ Error: ' + data.error;
+                    status.textContent = ' Lỗi: ' + data.error;
                 }
             } catch (error) {
                 status.classList.remove('loading');
                 status.classList.add('error');
-                status.textContent = '❌ Error: ' + error.message;
+                status.textContent = ' Lỗi: ' + error.message;
             }
 
-            // Reset progress
+            // Đặt lại thanh tiến trình
             setTimeout(() => {
                 progressBar.style.width = '0%';
             }, 500);
         }
 
-        // Display Results
+        // Hiển thị kết quả
         function displayResults(data) {
             const rbc = data.cell_counts.RBC || 0;
             const wbc = data.cell_counts.WBC || 0;
@@ -427,52 +422,52 @@
             const html = `
                 <div class="result-item">
                     <h3>📷 ${data.image_name}</h3>
-                    ${data.output_image ? `<img src="${data.output_image}" class="image-preview" alt="Analysis Result">` : ''}
+                    ${data.output_image ? `<img src="${data.output_image}" class="image-preview" alt="Kết quả Phân tích">` : ''}
                     
                     <div class="stats">
                         <div class="stat-box">
-                            <div class="label">Total Cells</div>
+                            <div class="label">Tổng số tế bào</div>
                             <div class="value">${data.total_cells}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="label">RBC</div>
+                            <div class="label">Hồng cầu (RBC)</div>
                             <div class="value">${rbc}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="label">WBC</div>
+                            <div class="label">Bạch cầu (WBC)</div>
                             <div class="value">${wbc}</div>
                         </div>
                     </div>
 
                     <div class="stats">
                         <div class="stat-box">
-                            <div class="label">Platelets</div>
+                            <div class="label">Tiểu cầu</div>
                             <div class="value">${platelets}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="label">RBC %</div>
+                            <div class="label">Tỷ lệ Hồng cầu</div>
                             <div class="value">${(data.cell_percentages.RBC || 0).toFixed(1)}%</div>
                         </div>
                         <div class="stat-box">
-                            <div class="label">WBC %</div>
+                            <div class="label">Tỷ lệ Bạch cầu</div>
                             <div class="value">${(data.cell_percentages.WBC || 0).toFixed(1)}%</div>
                         </div>
                     </div>
 
                     ${data.warnings && data.warnings.length > 0 ? `
                         <div class="alert alert-warning">
-                            <strong>⚠️ Clinical Alerts:</strong><br>
+                            <strong> Cảnh báo Lâm sàng:</strong><br>
                             ${data.warnings.join('<br>')}
                         </div>
                     ` : ''}
 
                     <div class="download-links">
-                        ${data.report_json ? `<a href="${data.report_json}" download>📋 JSON Report</a>` : ''}
-                        ${data.report_csv ? `<a href="${data.report_csv}" download>📊 CSV Summary</a>` : ''}
+                        ${data.report_json ? `<a href="${data.report_json}" download> Báo cáo JSON</a>` : ''}
+                        ${data.report_csv ? `<a href="${data.report_csv}" download> Tóm tắt CSV</a>` : ''}
                     </div>
 
                     <details style="margin-top: 15px;">
-                        <summary style="cursor: pointer; color: #667eea; font-weight: bold;">📄 Full Report</summary>
+                        <summary style="cursor: pointer; color: #667eea; font-weight: bold;"> Báo cáo Đầy đủ</summary>
                         <pre style="background: #f8f9ff; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; font-size: 0.8em;">${data.report || 'N/A'}</pre>
                     </details>
                 </div>
@@ -483,7 +478,7 @@
             noResults.classList.add('hidden');
         }
 
-        // Check system status
+        // Kiểm tra trạng thái hệ thống
         async function checkStatus() {
             try {
                 const response = await fetch('/api/health');
@@ -492,11 +487,11 @@
                     info.classList.remove('hidden');
                 }
             } catch (error) {
-                console.error('Status check failed:', error);
+                console.error('Kiểm tra trạng thái thất bại:', error);
             }
         }
 
-        // Initialize
+        // Khởi tạo
         checkStatus();
     </script>
 </body>
