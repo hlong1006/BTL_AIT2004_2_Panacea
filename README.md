@@ -52,7 +52,7 @@ Hệ thống được phát triển theo hướng Hybrid AI Pipeline, kết hợ
 ## Kiến trúc hệ thống
 
 ```text
-Ảnh đầu vào (.jpg / .png)
+  Ảnh đầu vào (.jpg / .png)
           |
           v
   YOLOv8 Detection
