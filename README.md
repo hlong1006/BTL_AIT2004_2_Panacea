@@ -53,25 +53,25 @@ Hệ thống được phát triển theo hướng Hybrid AI Pipeline, kết hợ
 
 ```text
   Ảnh đầu vào (.jpg / .png)
-          |
-          v
-  YOLOv8 Detection
-  (Phát hiện & Bounding Box)
-          |
-          v
+           |
+           v
+    YOLOv8 Detection
+(Phát hiện & Bounding Box)
+           |
+           v
   Feature Extraction (OpenCV)
-  (Cắt crop & trích 20 đặc trưng)
-          |
-          v
-  ML Classification
+(Cắt crop & trích 20 đặc trưng)
+           |
+           v
+    ML Classification
   (KNN / Decision Tree / SVM)
-          |
-          v
+           |
+           v
   Statistics & Reporting
   (Đếm, tỷ lệ, cảnh báo lâm sàng)
-          |
-          v
-  Kết quả đầu ra
+           |
+           v
+     Kết quả đầu ra
   (Ảnh có nhãn + Báo cáo CSV/JSON/TXT/Excel)
 ```
 
