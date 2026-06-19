@@ -7,28 +7,23 @@ services:
       dockerfile: Dockerfile
     image: blood-cell-analyzer:latest
     container_name: blood-cell-analyzer
-    
-    # Mount volumes
+
     volumes:
-      # Input data
       - ./data:/app/data
-      # Output results (writable)
       - ./outputs:/app/outputs
-      # Models
       - ./models:/app/models
-    
-    # Environment variables
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
       - FLASK_APP=web_app.py
       - FLASK_ENV=production
-    
-    # Port mapping for web interface
+
     ports:
       - "5000:5000"
-    
-    # Resource limits
+
     deploy:
       resources:
         limits:
@@ -37,33 +32,56 @@ services:
         reservations:
           cpus: '2'
           memory: 4G
-    
-    # Restart policy
-    restart: "no"
-    
-    # Run Flask web app
-    command: python web_app.py
 
-  # Alternative: GPU support (if you have GPU)
-  # ĐÃ XÓA CHỮ SERVICES: Ở ĐÂY. Thụt lề thẳng hàng với 'blood-cell-analyzer' ở trên.
+    restart: unless-stopped
+    command: ["python", "web_app.py"]
+
+  blood-cell-analyzer-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blood-cell-analyzer:latest
+    container_name: blood-cell-analyzer-cli
+    profiles:
+      - cli
+
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+
+    restart: "no"
+    entrypoint: ["/app/docker-entrypoint.sh"]
+    command: ["--help"]
+
   blood-cell-analyzer-gpu:
     build:
       context: .
       dockerfile: Dockerfile.gpu
     image: blood-cell-analyzer:gpu
     container_name: blood-cell-analyzer-gpu
-    
+
     volumes:
-      - ./data:/app/data:ro
+      - ./data:/app/data
       - ./outputs:/app/outputs
-      - ./models:/app/models:ro
-    
+      - ./models:/app/models
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
+      - FLASK_APP=web_app.py
+      - FLASK_ENV=production
       - CUDA_VISIBLE_DEVICES=0
-    
-    # GPU support
+
+    ports:
+      - "5000:5000"
+
     deploy:
       resources:
         reservations:
@@ -71,7 +89,8 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    
-    restart: "no"
+
+    restart: unless-stopped
     profiles:
-      - gpu  # Only run with: docker compose --profile gpu up
+      - gpu
+    command: ["python", "web_app.py"]

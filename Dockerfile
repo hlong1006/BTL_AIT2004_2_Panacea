@@ -19,24 +19,27 @@ COPY requirements-docker.txt .
 
 # Install Python dependencies (CPU-only PyTorch, no CUDA)
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --prefer-binary --retries 5 --default-timeout=1000 -r requirements-docker.txt
+    pip install --no-cache-dir --prefer-binary --retries 5 --default-timeout=1000 \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r requirements-docker.txt
 
 # Copy application code
 COPY . .
 
-# Create volumes for data and outputs
-RUN mkdir -p /app/data /app/outputs /app/models
+# Create volumes for data and outputs (ĐÃ XÓA ENTRYPOINT CHMOD)
+RUN mkdir -p /app/data /app/outputs /app/models /app/uploads /app/results
 
-# Expose port for API (future use)
-EXPOSE 8000
+# Web interface port
+EXPOSE 5000
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV FLASK_APP=web_app.py
+ENV FLASK_ENV=production
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')" || exit 1
 
-# Default command (will be overridden by docker-compose)
 CMD ["python", "web_app.py"]

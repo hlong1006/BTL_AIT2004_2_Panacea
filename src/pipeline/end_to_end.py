@@ -23,9 +23,23 @@ class PipelineOutput:
 
 
 class HybridCellPipeline:
-    def __init__(self, yolo_model_path: Optional[Path], ml_model_path: Path):
+    def __init__(
+        self,
+        yolo_model_path: Optional[Path],
+        ml_model_path: Path,
+        yolo_conf: float = YoloDetector.DEFAULT_CONF,
+        yolo_iou: float = YoloDetector.DEFAULT_IOU,
+        yolo_imgsz: int = YoloDetector.DEFAULT_IMGSZ,
+        yolo_max_det: int = YoloDetector.DEFAULT_MAX_DET,
+    ):
         ensure_dirs([PATHS.interim_crops, PATHS.processed_features])
-        self.detector = YoloDetector(yolo_model_path)
+        self.detector = YoloDetector(
+            yolo_model_path,
+            conf_threshold=yolo_conf,
+            iou_threshold=yolo_iou,
+            imgsz=yolo_imgsz,
+            max_det=yolo_max_det,
+        )
         self.extractor = CellFeatureExtractor()
         self.ml_checkpoint = MLClassifier.load_model(ml_model_path)
 

@@ -12,8 +12,11 @@ if [ -z "$1" ] || [ "$1" = "--help" ]; then
     echo ""
     echo "Available commands:"
     echo ""
+    echo "  Web interface (Flask):"
+    echo "    docker run -p 5000:5000 -v \$(pwd)/models:/app/models blood-cell-analyzer:latest python web_app.py"
+    echo ""
     echo "  Single image analysis:"
-    echo "    docker run -v \$(pwd):/app/data app:latest --image data/sample.png --output data/results/"
+    echo "    docker run -v \$(pwd)/models:/app/models -v \$(pwd)/outputs:/app/outputs blood-cell-analyzer:latest --image data/train/images/sample.jpg --output outputs/analysis_results/"
     echo ""
     echo "  Batch processing:"
     echo "    docker run -v \$(pwd):/app/data app:latest --folder data/samples --output data/results/ --recursive"
@@ -31,8 +34,8 @@ if [ -z "$1" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-# If first argument is 'bash' or 'sh', start interactive shell
-if [ "$1" = "bash" ] || [ "$1" = "sh" ] || [ "$1" = "python" ]; then
+# If first argument starts the web server or another Python script, run it directly
+if [ "$1" = "bash" ] || [ "$1" = "sh" ] || [ "$1" = "python" ] || [ "$1" = "python3" ]; then
     exec "$@"
 fi
 

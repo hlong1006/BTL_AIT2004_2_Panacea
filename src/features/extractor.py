@@ -45,7 +45,8 @@ class CellFeatureExtractor:
             
             # Độ lệch tâm = sqrt(1 - (trục_nhỏ/trục_lớn)^2)
             ratio = minor / major if major > 0 else 0
-            eccentricity = float(np.sqrt(1 - ratio**2))
+            ratio = min(ratio, 1.0)
+            eccentricity = float(np.sqrt(max(0.0, 1 - ratio**2)))
             return eccentricity
         except Exception:
             return 0.0
@@ -78,12 +79,13 @@ class CellFeatureExtractor:
         """
         Tính toán các Mô-men Hu để khớp hình dạng.
         3 mô-men đầu tiên bất biến đối với phép tịnh tiến, thu phóng và phép quay.
-        Giúp phân biệt các loại tế bào bằng đặc trưng hình dạng của chúng.
         """
         try:
-            moments = cv2.HuMoments(contour)
-            # Trả về 3 mô-men đầu tiên (có tính phân biệt cao nhất)
-            return tuple(float(abs(m[0])) for m in moments[:3])
+            moments = cv2.moments(contour)
+            if moments.get("m00", 0) == 0:
+                return (0.0, 0.0, 0.0)
+            hu = cv2.HuMoments(moments)
+            return tuple(float(abs(m[0])) for m in hu[:3])
         except Exception:
             return (0.0, 0.0, 0.0)
     

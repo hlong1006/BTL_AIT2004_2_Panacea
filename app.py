@@ -16,6 +16,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Windows console: tránh lỗi Unicode khi in tiếng Việt
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Đảm bảo src có thể import được
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -50,22 +55,20 @@ class BloodCellAnalysisApp:
         # Xác thực các đường dẫn
         if not ml_model_path.exists():
             raise FileNotFoundError(f"Không tìm thấy mô hình ML: {ml_model_path}")
-        
-        # Điều chỉnh đường dẫn YOLO nếu nó không tồn tại
-        yolo_exists = yolo_model_path.exists()
+        if not yolo_model_path.exists():
+            raise FileNotFoundError(
+                f"Không tìm thấy mô hình YOLO: {yolo_model_path}\n"
+                "Hãy đặt file best.pt vào models/yolo/best.pt (tải từ huấn luyện hoặc copy từ runs/cell_detect/weights/)."
+            )
         
         if self.verbose:
             print(" Đang khởi tạo Hệ thống Phân tích Tế bào Máu...")
+            print(f"   Mô hình YOLO: {yolo_model_path}")
             print(f"   Mô hình ML: {ml_model_path}")
-            if yolo_exists:
-                print(f"   Mô hình YOLO: {yolo_model_path}")
-            else:
-                print(f"     Không tìm thấy Mô hình YOLO (sẽ sử dụng phương án dự phòng)")
         
         # Khởi tạo quy trình (pipeline)
-        yolo_to_load = yolo_model_path if yolo_exists else None
         self.pipeline = HybridCellPipeline(
-            yolo_model_path=yolo_to_load,
+            yolo_model_path=yolo_model_path,
             ml_model_path=ml_model_path,
             yolo_conf=yolo_conf,
             yolo_iou=yolo_iou,

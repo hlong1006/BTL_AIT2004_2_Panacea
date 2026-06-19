@@ -143,9 +143,9 @@ def system_info():
             "ml": "best_ml_model.pt"
         },
         "classes": {
-            0: "RBC (Hồng cầu)",
-            1: "WBC (Bạch cầu)",
-            2: "Platelets (Tiểu cầu)"
+            0: "Platelets (Tiểu cầu)",
+            1: "RBC (Hồng cầu)",
+            2: "WBC (Bạch cầu)"
         }
     })
 
