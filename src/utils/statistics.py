@@ -88,6 +88,17 @@ class StatisticsCalculator:
                     }
         
         # Tạo cảnh báo cho các giá trị bất thường
+        if features_df is not None and len(features_df) > 0 and "area" in features_df.columns:
+            areas = features_df["area"].dropna()
+            if len(areas) > 0:
+                median_area = float(areas.median())
+                huge = areas[areas > median_area * 8]
+                if len(huge) > 0:
+                    stats.add_warning(
+                        f"Phát hiện {len(huge)} vùng có kích thước bất thường lớn — "
+                        "có thể là cụm tế bào chưa tách được, kết quả phân loại có thể không chính xác"
+                    )
+
         StatisticsCalculator._generate_warnings(stats)
         
         return stats
@@ -144,7 +155,7 @@ class StatisticsCalculator:
         if total < 5:
             stats.add_warning(
                 f"Phát hiện rất ít tế bào: {total} - "
-                "Có thể cần quét lại hoặc điều chỉnh kính hiển vi"
+                "Ảnh có thể quá mờ/nhạt hoặc cần tăng độ phóng đại kính hiển vi"
             )
         
         # Cảnh báo nếu số lượng tế bào quá nhiều (có thể do lỗi phân đoạn)

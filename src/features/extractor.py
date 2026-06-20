@@ -5,14 +5,24 @@ import numpy as np
 
 
 class CellFeatureExtractor:
-    MIN_SIZE = 10  # Kích thước hình ảnh tối thiểu để xử lý
+    MIN_SIZE = 10
+    UPSCALE_TARGET = 48  # Phóng crop nhỏ lên trước khi đo đặc trưng
+    
+    @staticmethod
+    def _prepare_crop(cell_bgr: np.ndarray) -> np.ndarray:
+        h, w = cell_bgr.shape[:2]
+        min_dim = min(h, w)
+        if min_dim >= CellFeatureExtractor.UPSCALE_TARGET:
+            return cell_bgr
+        scale = CellFeatureExtractor.UPSCALE_TARGET / min_dim
+        new_w = max(CellFeatureExtractor.MIN_SIZE, int(w * scale))
+        new_h = max(CellFeatureExtractor.MIN_SIZE, int(h * scale))
+        return cv2.resize(cell_bgr, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
     
     @staticmethod
     def _make_mask(cell_bgr: np.ndarray) -> np.ndarray:
-        # Xác thực kích thước hình ảnh
         h, w = cell_bgr.shape[:2]
         if h < CellFeatureExtractor.MIN_SIZE or w < CellFeatureExtractor.MIN_SIZE:
-            # Trả về mặt nạ rỗng cho các hình ảnh nhỏ
             return np.zeros((h, w), dtype=np.uint8)
         
         try:
@@ -20,6 +30,18 @@ class CellFeatureExtractor:
             blur = cv2.GaussianBlur(gray, (5, 5), 0)
             _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+
+            # Ảnh mờ: Otsu thường cho mask quá lớn/nhỏ → thử adaptive
+            coverage = cv2.countNonZero(mask) / (h * w)
+            if coverage < 0.05 or coverage > 0.92:
+                adaptive = cv2.adaptiveThreshold(
+                    blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+                )
+                adaptive = cv2.morphologyEx(adaptive, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+                adaptive_coverage = cv2.countNonZero(adaptive) / (h * w)
+                if 0.08 <= adaptive_coverage <= 0.85:
+                    mask = adaptive
+
             return mask
         except Exception as e:
             print(f"[WARN] Error creating mask: {e}")
@@ -151,8 +173,8 @@ class CellFeatureExtractor:
     def extract(self, cell_bgr: np.ndarray) -> Dict[str, float]:
         """
         Trích xuất tập hợp các đặc trưng toàn diện để phân loại tế bào.
-        Được tăng cường với các bộ mô tả hình dạng để phân biệt tốt hơn RBC, WBC và Tiểu cầu (Platelets).
         """
+        cell_bgr = self._prepare_crop(cell_bgr)
         mask = self._make_mask(cell_bgr)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 

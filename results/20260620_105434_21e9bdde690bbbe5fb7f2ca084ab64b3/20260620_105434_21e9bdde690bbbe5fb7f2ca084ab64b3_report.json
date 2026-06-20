@@ -1,0 +1,37 @@
+{
+  "total_cells": 178,
+  "cell_counts": {
+    "Platelets": 112,
+    "RBC": 56,
+    "WBC": 10
+  },
+  "cell_percentages": {
+    "Platelets": 62.92134831460674,
+    "RBC": 31.46067415730337,
+    "WBC": 5.617977528089887
+  },
+  "feature_stats": {
+    "Platelets": {
+      "avg_area": 2460.8928571428573,
+      "avg_perimeter": 203.04305800901992,
+      "avg_circularity": 0.7510613204993735,
+      "avg_texture": 90.64954470999325
+    },
+    "RBC": {
+      "avg_area": 1635.8482142857142,
+      "avg_perimeter": 313.00239114250456,
+      "avg_circularity": 0.21779714253728386,
+      "avg_texture": 91.92538373110635
+    },
+    "WBC": {
+      "avg_area": 5653.6,
+      "avg_perimeter": 479.67291326522826,
+      "avg_circularity": 0.37267001540088696,
+      "avg_texture": 98.20595574501833
+    }
+  },
+  "warnings": [
+    "RBC th\u1ea5p: 56 t\u1ebf b\u00e0o (31.5%) - C\u00f3 th\u1ec3 l\u00e0 d\u1ea5u hi\u1ec7u thi\u1ebfu m\u00e1u ho\u1eb7c r\u1ed1i lo\u1ea1n m\u00e1u",
+    "Ti\u1ec3u c\u1ea7u cao: 112 t\u1ebf b\u00e0o (62.9%) - C\u00f3 th\u1ec3 l\u00e0 d\u1ea5u hi\u1ec7u t\u0103ng ti\u1ec3u c\u1ea7u"
+  ]
+}

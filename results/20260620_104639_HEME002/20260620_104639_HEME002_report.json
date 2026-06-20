@@ -1,0 +1,28 @@
+{
+  "total_cells": 74,
+  "cell_counts": {
+    "RBC": 72,
+    "WBC": 2
+  },
+  "cell_percentages": {
+    "RBC": 97.2972972972973,
+    "WBC": 2.7027027027027026
+  },
+  "feature_stats": {
+    "RBC": {
+      "avg_area": 1652.798611111111,
+      "avg_perimeter": 235.43366635839143,
+      "avg_circularity": 0.4567468477938264,
+      "avg_texture": 324.61483822304183
+    },
+    "WBC": {
+      "avg_area": 6144.75,
+      "avg_perimeter": 579.9152569770813,
+      "avg_circularity": 0.22491521287853145,
+      "avg_texture": 684.2437234431993
+    }
+  },
+  "warnings": [
+    "Ti\u1ec3u c\u1ea7u c\u1ef1c th\u1ea5p: 0 t\u1ebf b\u00e0o (0.0%) - C\u00f3 th\u1ec3 l\u00e0 d\u1ea5u hi\u1ec7u gi\u1ea3m ti\u1ec3u c\u1ea7u"
+  ]
+}

@@ -37,10 +37,10 @@ class BloodCellAnalysisApp:
         self,
         yolo_model_path: Optional[Path] = None,
         ml_model_path: Optional[Path] = None,
-        yolo_conf: float = 0.12,
+        yolo_conf: float = 0.06,
         yolo_iou: float = 0.45,
-        yolo_imgsz: int = 416,
-        yolo_max_det: int = 500,
+        yolo_imgsz: int = 640,
+        yolo_max_det: int = 1000,
         verbose: bool = False,
     ):
         """Khởi tạo ứng dụng."""
@@ -294,8 +294,8 @@ Ví dụ:
     parser.add_argument(
         "--conf",
         type=float,
-        default=0.12,
-        help="Ngưỡng độ tin cậy YOLO (mặc định: 0.12, thấp hơn = phát hiện nhiều hơn)",
+        default=0.06,
+        help="Ngưỡng độ tin cậy YOLO (mặc định: 0.06, thấp hơn = bắt tế bào nhỏ tốt hơn)",
     )
     parser.add_argument(
         "--iou",
@@ -306,8 +306,8 @@ Ví dụ:
     parser.add_argument(
         "--imgsz",
         type=int,
-        default=416,
-        help="Kích thước ảnh suy luận của YOLO, nên khớp với lúc huấn luyện (mặc định: 416)",
+        default=640,
+        help="Kích thước suy luận YOLO (mặc định: 640, cao hơn giúp bắt tế bào nhỏ)",
     )
     
     return parser.parse_args()

@@ -18,14 +18,13 @@ class Detection:
 
 
 class YoloDetector:
-    # Cải thiện các giá trị mặc định để phát hiện tế bào nhỏ tốt hơn và giảm phân loại sai
-    # - Ngưỡng độ tin cậy thấp hơn giúp bắt được nhiều tế bào nhỏ hơn (trước đây là 0.12)
-    # - max_det cao hơn cho các tiêu bản dày đặc với nhiều tế bào
-    # - Hỗ trợ phát hiện đa tỷ lệ để có độ phủ (recall) tốt hơn trên các đối tượng nhỏ
-    DEFAULT_CONF = 0.08  # Giảm từ 0.12 để phát hiện tế bào nhỏ tốt hơn
-    DEFAULT_IOU = 0.40   # Giảm một chút để phân tách tốt hơn
-    DEFAULT_IMGSZ = 416
-    DEFAULT_MAX_DET = 800  # Tăng từ 500 cho các tiêu bản dày đặc
+    # Tối ưu cho tế bào nhỏ và ảnh mờ
+    DEFAULT_CONF = 0.06
+    DEFAULT_IOU = 0.45
+    DEFAULT_IMGSZ = 640
+    DEFAULT_MAX_DET = 1000
+    # Bbox lớn hơn ngưỡng này (so với ảnh) thường là cụm nhiều tế bào → tái phát hiện trong vùng crop
+    MAX_SINGLE_CELL_AREA_RATIO = 0.045
 
     def __init__(
         self,
@@ -51,6 +50,53 @@ class YoloDetector:
             except Exception as exc:
                 print(f"[WARN] Could not load YOLO model: {exc}")
 
+    @staticmethod
+    def _enhance_for_detection(image: np.ndarray) -> np.ndarray:
+        """Tăng tương phản cục bộ — giúp ảnh mờ/nhạt dễ phát hiện tế bào nhỏ hơn."""
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        l_channel, a_channel, b_channel = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+        l_channel = clahe.apply(l_channel)
+        enhanced = cv2.merge([l_channel, a_channel, b_channel])
+        return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+
+    def _predict_raw(self, image: np.ndarray, conf: Optional[float] = None, imgsz: Optional[int] = None) -> List[Detection]:
+        if self.model is None:
+            return []
+
+        results = self.model.predict(
+            image,
+            conf=conf if conf is not None else self.conf_threshold,
+            iou=self.iou_threshold,
+            imgsz=imgsz if imgsz is not None else self.imgsz,
+            max_det=self.max_det,
+            verbose=False,
+        )
+        detections: List[Detection] = []
+        for r in results:
+            if r.boxes is None:
+                continue
+            for box in r.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                width = x2 - x1
+                height = y2 - y1
+                if width * height < 9:
+                    continue
+
+                cls_id = int(box.cls[0].item())
+                detections.append(
+                    Detection(
+                        x1=int(x1),
+                        y1=int(y1),
+                        x2=int(x2),
+                        y2=int(y2),
+                        confidence=float(box.conf[0].item()),
+                        class_id=cls_id,
+                        class_name=str(self.class_names.get(cls_id, str(cls_id))),
+                    )
+                )
+        return detections
+
     def detect(self, image: np.ndarray) -> List[Detection]:
         if self.model is None:
             h, w = image.shape[:2]
@@ -66,151 +112,167 @@ class YoloDetector:
                 )
             ]
 
-        results = self.model.predict(
-            image,
-            conf=self.conf_threshold,
-            iou=self.iou_threshold,
-            imgsz=self.imgsz,
-            max_det=self.max_det,
-            verbose=False,
-        )
-        detections: List[Detection] = []
-        for r in results:
-            if r.boxes is None:
-                continue
-            for box in r.boxes:
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
-                
-                # Tính diện tích và áp dụng bộ lọc kích thước tối thiểu
-                # Điều này giúp lọc nhiễu trong khi vẫn giữ lại các tế bào nhỏ nhưng có thực
-                width = x2 - x1
-                height = y2 - y1
-                area = width * height
-                
-                # Tối thiểu 3x3 px để được coi là một tế bào thực
-                min_area = 9
-                if area < min_area:
-                    continue
-                    
-                detections.append(
-                    Detection(
-                        x1=int(x1),
-                        y1=int(y1),
-                        x2=int(x2),
-                        y2=int(y2),
-                        confidence=conf,
-                        class_id=cls_id,
-                        class_name=str(self.class_names.get(cls_id, str(cls_id))),
-                    )
-                )
-        
-        # Hậu xử lý: gộp các phát hiện rất gần nhau để giảm trùng lặp
-        detections = self._merge_nearby_detections(detections)
+        # Phát hiện trên ảnh gốc + ảnh đã enhance, rồi gộp bằng NMS (không average bbox)
+        detections = self._predict_raw(image)
+        enhanced = self._enhance_for_detection(image)
+        detections.extend(self._predict_raw(enhanced))
+
+        detections = self._non_max_suppression(detections, iou_threshold=0.55)
+        detections = self._refine_oversized_detections(image, detections)
+        detections.sort(key=lambda d: d.confidence, reverse=True)
         return detections
-    
+
     @staticmethod
-    def _merge_nearby_detections(detections: List[Detection], threshold: float = 0.3) -> List[Detection]:
-        """
-        Gộp các phát hiện gần nhau có khả năng là cùng một tế bào.
-        Sử dụng ngưỡng IoU (Intersection over Union - Tỷ lệ phần giao trên phần hợp).
-        """
+    def _non_max_suppression(detections: List[Detection], iou_threshold: float = 0.55) -> List[Detection]:
+        """Loại bbox trùng lặp thật sự — giữ bbox confidence cao, không gộp/average."""
         if len(detections) <= 1:
             return detections
-        
-        merged = []
-        used = set()
-        
-        for i, det1 in enumerate(detections):
-            if i in used:
+
+        sorted_dets = sorted(detections, key=lambda d: d.confidence, reverse=True)
+        kept: List[Detection] = []
+
+        for candidate in sorted_dets:
+            suppress = False
+            for kept_det in kept:
+                if YoloDetector._calculate_iou(candidate, kept_det) > iou_threshold:
+                    suppress = True
+                    break
+            if not suppress:
+                kept.append(candidate)
+
+        return kept
+
+    def _refine_oversized_detections(
+        self,
+        image: np.ndarray,
+        detections: List[Detection],
+        max_area_ratio: float = MAX_SINGLE_CELL_AREA_RATIO,
+    ) -> List[Detection]:
+        """Tái phát hiện trong vùng bbox quá lớn (thường là cụm tế bào bị gom nhầm)."""
+        img_h, img_w = image.shape[:2]
+        img_area = img_h * img_w
+        refined: List[Detection] = []
+
+        for det in detections:
+            det_w = det.x2 - det.x1
+            det_h = det.y2 - det.y1
+            det_area = det_w * det_h
+
+            if det_area / img_area <= max_area_ratio:
+                refined.append(det)
                 continue
-            
-            group = [det1]
-            for j, det2 in enumerate(detections[i+1:], start=i+1):
-                if j in used:
+
+            crop = self.crop_detection(image, det)
+            if crop.size == 0:
+                continue
+
+            crop_h, crop_w = crop.shape[:2]
+            refine_imgsz = min(640, max(crop_h, crop_w, 256))
+            refine_conf = max(0.03, self.conf_threshold * 0.6)
+
+            sub_dets = self._predict_raw(crop, conf=refine_conf, imgsz=refine_imgsz)
+            sub_dets = self._non_max_suppression(sub_dets, iou_threshold=0.5)
+
+            if len(sub_dets) >= 2:
+                for sub in sub_dets:
+                    sub_x1 = det.x1 + sub.x1
+                    sub_y1 = det.y1 + sub.y1
+                    sub_x2 = det.x1 + sub.x2
+                    sub_y2 = det.y1 + sub.y2
+                    refined.append(
+                        Detection(
+                            x1=min(sub_x1, img_w - 1),
+                            y1=min(sub_y1, img_h - 1),
+                            x2=min(sub_x2, img_w),
+                            y2=min(sub_y2, img_h),
+                            confidence=sub.confidence,
+                            class_id=sub.class_id,
+                            class_name=sub.class_name,
+                        )
+                    )
+                continue
+
+            # Thử lại trên ảnh đã enhance trong vùng crop
+            enhanced_crop = self._enhance_for_detection(crop)
+            sub_dets = self._predict_raw(enhanced_crop, conf=refine_conf, imgsz=refine_imgsz)
+            sub_dets = self._non_max_suppression(sub_dets, iou_threshold=0.5)
+
+            if len(sub_dets) >= 2:
+                for sub in sub_dets:
+                    refined.append(
+                        Detection(
+                            x1=min(det.x1 + sub.x1, img_w - 1),
+                            y1=min(det.y1 + sub.y1, img_h - 1),
+                            x2=min(det.x1 + sub.x2, img_w),
+                            y2=min(det.y1 + sub.y2, img_h),
+                            confidence=sub.confidence,
+                            class_id=sub.class_id,
+                            class_name=sub.class_name,
+                        )
+                    )
+                continue
+
+            # Không tách được → bỏ bbox cụm (tránh 1 nhãn ML sai cho cả cụm)
+            if len(sub_dets) == 1:
+                sub = sub_dets[0]
+                sub_area = (sub.x2 - sub.x1) * (sub.y2 - sub.y1)
+                if sub_area < det_area * 0.85:
+                    refined.append(
+                        Detection(
+                            x1=min(det.x1 + sub.x1, img_w - 1),
+                            y1=min(det.y1 + sub.y1, img_h - 1),
+                            x2=min(det.x1 + sub.x2, img_w),
+                            y2=min(det.y1 + sub.y2, img_h),
+                            confidence=sub.confidence,
+                            class_id=sub.class_id,
+                            class_name=sub.class_name,
+                        )
+                    )
                     continue
-                
-                # Tính IoU
-                iou = YoloDetector._calculate_iou(det1, det2)
-                if iou > threshold:
-                    group.append(det2)
-                    used.add(j)
-            
-            # Gộp nhóm bằng cách lấy trung bình các tọa độ (được tính trọng số theo độ tin cậy)
-            if len(group) > 1:
-                merged_det = YoloDetector._average_detections(group)
-            else:
-                merged_det = group[0]
-            
-            merged.append(merged_det)
-            used.add(i)
-        
-        return merged
-    
+
+            print(
+                f"[WARN] Bỏ qua bbox cụm ({det_w}x{det_h}px, conf={det.confidence:.2f}) — "
+                "không tách được thành tế bào riêng lẻ"
+            )
+
+        return refined
+
     @staticmethod
     def _calculate_iou(det1: Detection, det2: Detection) -> float:
-        """Tính Tỷ lệ phần giao trên phần hợp (IoU) giữa hai phát hiện."""
-        x1_min, y1_min, x1_max, y1_max = det1.x1, det1.y1, det1.x2, det1.y2
-        x2_min, y2_min, x2_max, y2_max = det2.x1, det2.y1, det2.x2, det2.y2
-        
-        # Phần giao (Intersection)
-        inter_xmin = max(x1_min, x2_min)
-        inter_ymin = max(y1_min, y2_min)
-        inter_xmax = min(x1_max, x2_max)
-        inter_ymax = min(y1_max, y2_max)
-        
+        inter_xmin = max(det1.x1, det2.x1)
+        inter_ymin = max(det1.y1, det2.y1)
+        inter_xmax = min(det1.x2, det2.x2)
+        inter_ymax = min(det1.y2, det2.y2)
+
         if inter_xmax <= inter_xmin or inter_ymax <= inter_ymin:
             return 0.0
-        
+
         inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
-        
-        # Phần hợp (Union)
-        det1_area = (x1_max - x1_min) * (y1_max - y1_min)
-        det2_area = (x2_max - x2_min) * (y2_max - y2_min)
+        det1_area = (det1.x2 - det1.x1) * (det1.y2 - det1.y1)
+        det2_area = (det2.x2 - det2.x1) * (det2.y2 - det2.y1)
         union_area = det1_area + det2_area - inter_area
-        
+
         if union_area == 0:
             return 0.0
-        
+
         return inter_area / union_area
-    
-    @staticmethod
-    def _average_detections(detections: List[Detection]) -> Detection:
-        """Lấy trung bình các tọa độ và độ tin cậy của nhiều phát hiện."""
-        total_conf = sum(d.confidence for d in detections)
-        avg_conf = total_conf / len(detections)
-        
-        avg_x1 = sum(d.x1 for d in detections) / len(detections)
-        avg_y1 = sum(d.y1 for d in detections) / len(detections)
-        avg_x2 = sum(d.x2 for d in detections) / len(detections)
-        avg_y2 = sum(d.y2 for d in detections) / len(detections)
-        
-        return Detection(
-            x1=int(avg_x1),
-            y1=int(avg_y1),
-            x2=int(avg_x2),
-            y2=int(avg_y2),
-            confidence=avg_conf,
-            class_id=detections[0].class_id,
-            class_name=detections[0].class_name,
-        )
 
     @staticmethod
-    def crop_detection(image: np.ndarray, det: Detection) -> np.ndarray:
+    def crop_detection(image: np.ndarray, det: Detection, padding_ratio: float = 0.05) -> np.ndarray:
         h, w = image.shape[:2]
-        x1 = max(0, min(det.x1, w - 1))
-        x2 = max(1, min(det.x2, w))
-        y1 = max(0, min(det.y1, h - 1))
-        y2 = max(1, min(det.y2, h))
+        pad_x = int((det.x2 - det.x1) * padding_ratio)
+        pad_y = int((det.y2 - det.y1) * padding_ratio)
+        x1 = max(0, det.x1 - pad_x)
+        x2 = min(w, det.x2 + pad_x)
+        y1 = max(0, det.y1 - pad_y)
+        y2 = min(h, det.y2 + pad_y)
         return image[y1:y2, x1:x2]
 
-    # BGR (Xanh lam, Xanh lục, Đỏ)
     CLASS_COLORS_BGR = {
-        "Platelets": (0, 165, 255),   
-        "RBC": (0, 0, 255),           
-        "WBC": (255, 80, 0),          
-        "cell": (0, 255, 255),        
+        "Platelets": (0, 165, 255),
+        "RBC": (0, 0, 255),
+        "WBC": (255, 80, 0),
+        "cell": (0, 255, 255),
     }
 
     @staticmethod
@@ -233,6 +295,6 @@ class YoloDetector:
         for i, det in enumerate(detections):
             label = labels[i] if labels and i < len(labels) else det.class_name
             color = YoloDetector._color_for_class(label)
-            cv2.rectangle(output, (det.x1, det.y1), (det.x2, det.y2), color, 3)
+            cv2.rectangle(output, (det.x1, det.y1), (det.x2, det.y2), color, 2)
             YoloDetector._draw_label(output, label, det.x1, max(0, det.y1 - 6), color)
         return output
