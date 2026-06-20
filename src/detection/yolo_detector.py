@@ -266,6 +266,13 @@ class YoloDetector:
         x2 = min(w, det.x2 + pad_x)
         y1 = max(0, det.y1 - pad_y)
         y2 = min(h, det.y2 + pad_y)
+        # Đảm bảo x1 < x2 và y1 < y2 để tránh crop trống
+        if x1 >= x2:
+            x1, x2 = max(0, x1 - 1), x1 + 1
+        if y1 >= y2:
+            y1, y2 = max(0, y1 - 1), y1 + 1
+        x2 = min(x2, w)
+        y2 = min(y2, h)
         return image[y1:y2, x1:x2]
 
     CLASS_COLORS_BGR = {

@@ -10,10 +10,15 @@ class CellFeatureExtractor:
     
     @staticmethod
     def _prepare_crop(cell_bgr: np.ndarray) -> np.ndarray:
+        # Kiểm tra ảnh không trống
+        if cell_bgr.size == 0 or cell_bgr.shape[0] == 0 or cell_bgr.shape[1] == 0:
+            return np.zeros((CellFeatureExtractor.MIN_SIZE, CellFeatureExtractor.MIN_SIZE, 3), dtype=np.uint8)
         h, w = cell_bgr.shape[:2]
         min_dim = min(h, w)
         if min_dim >= CellFeatureExtractor.UPSCALE_TARGET:
             return cell_bgr
+        if min_dim == 0:
+            return np.zeros((CellFeatureExtractor.MIN_SIZE, CellFeatureExtractor.MIN_SIZE, 3), dtype=np.uint8)
         scale = CellFeatureExtractor.UPSCALE_TARGET / min_dim
         new_w = max(CellFeatureExtractor.MIN_SIZE, int(w * scale))
         new_h = max(CellFeatureExtractor.MIN_SIZE, int(h * scale))
@@ -22,6 +27,8 @@ class CellFeatureExtractor:
     @staticmethod
     def _make_mask(cell_bgr: np.ndarray) -> np.ndarray:
         h, w = cell_bgr.shape[:2]
+        if h == 0 or w == 0 or cell_bgr.size == 0:
+            return np.zeros((max(1, h), max(1, w)), dtype=np.uint8)
         if h < CellFeatureExtractor.MIN_SIZE or w < CellFeatureExtractor.MIN_SIZE:
             return np.zeros((h, w), dtype=np.uint8)
         
@@ -117,7 +124,7 @@ class CellFeatureExtractor:
         Tính toán thống kê màu sắc bao gồm cả phương sai.
         WBC thường có cường độ/phương sai màu sắc khác với RBC.
         """
-        if cv2.countNonZero(mask) == 0:
+        if cell_bgr.size == 0 or cell_bgr.shape[0] == 0 or cell_bgr.shape[1] == 0 or cv2.countNonZero(mask) == 0:
             return {
                 "color_std_b": 0.0,
                 "color_std_g": 0.0,
@@ -174,6 +181,14 @@ class CellFeatureExtractor:
         """
         Trích xuất tập hợp các đặc trưng toàn diện để phân loại tế bào.
         """
+        # Kiểm tra ảnh không trống
+        if cell_bgr.size == 0 or cell_bgr.shape[0] == 0 or cell_bgr.shape[1] == 0:
+            return {
+                "area": 0.0, "perimeter": 0.0, "circularity": 0.0, "eccentricity": 0.0,
+                "solidity": 0.0, "extent": 0.0, "hu_moment_1": 0.0, "hu_moment_2": 0.0, "hu_moment_3": 0.0,
+                "mean_b": 0.0, "mean_g": 0.0, "mean_r": 0.0, "mean_h": 0.0, "mean_s": 0.0, "mean_v": 0.0,
+                "texture_laplacian": 0.0, "color_std_b": 0.0, "color_std_g": 0.0, "color_std_r": 0.0, "color_std_hsv": 0.0
+            }
         cell_bgr = self._prepare_crop(cell_bgr)
         mask = self._make_mask(cell_bgr)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -199,11 +214,16 @@ class CellFeatureExtractor:
             extent = self._calculate_extent(contour, area)
             hu_m1, hu_m2, hu_m3 = self._calculate_hu_moments(contour)
 
-        mean_bgr = cv2.mean(cell_bgr, mask=mask)[:3]
-        hsv = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2HSV)
-        mean_hsv = cv2.mean(hsv, mask=mask)[:3]
-
-        texture_laplacian = float(cv2.Laplacian(cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var())
+        # Kiểm tra lại trước khi gọi cvtColor
+        if cell_bgr.size == 0 or cell_bgr.shape[0] == 0 or cell_bgr.shape[1] == 0:
+            mean_bgr = (0.0, 0.0, 0.0)
+            mean_hsv = (0.0, 0.0, 0.0)
+            texture_laplacian = 0.0
+        else:
+            mean_bgr = cv2.mean(cell_bgr, mask=mask)[:3]
+            hsv = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2HSV)
+            mean_hsv = cv2.mean(hsv, mask=mask)[:3]
+            texture_laplacian = float(cv2.Laplacian(cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var())
         
         # Thống kê màu sắc
         color_stats = self._calculate_color_stats(cell_bgr, mask)

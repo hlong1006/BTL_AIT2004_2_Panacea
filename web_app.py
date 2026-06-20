@@ -201,7 +201,7 @@ def upload_file():
             img = cv2.imread(str(filepath))
             if img is not None:
                 height = img.shape[0]
-                scale = 300 / height if height > 300 else 1
+                scale = 300 / max(height, 1) if height > 300 else 1
                 thumb = cv2.resize(img, (int(img.shape[1] * scale), int(img.shape[0] * scale)))
                 thumb_path = output_dir / 'thumbnail.jpg'
                 cv2.imwrite(str(thumb_path), thumb)
