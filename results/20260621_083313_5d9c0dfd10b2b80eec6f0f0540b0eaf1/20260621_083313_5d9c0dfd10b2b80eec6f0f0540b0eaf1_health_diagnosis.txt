@@ -1,0 +1,25 @@
+======================================================================
+BÁO CÁO CHẨN ĐOÁN SỨC KHỎE MÁU (dựa trên tỷ lệ tế bào ảnh lam)
+======================================================================
+
+TRẠNG THÁI CHUNG: Bình thường
+
+Lưu ý: Kết quả dựa trên tỷ lệ tế bào trong field ảnh vi thể,
+không phải nồng độ máu thực tế (CBC). Cần xét nghiệm bổ sung để xác nhận.
+
+TÓM TẮT:
+Tỷ lệ tế bào trong field ảnh nằm trong khoảng bình thường. Tổng 215 tế bào: RBC 90.2%, WBC 3.3%, Platelets 6.5%.
+
+CHI TIẾT PHÂN TÍCH:
+Tổng tế bào phát hiện: 215
+  RBC: 194 (90.23%)
+  WBC: 7 (3.26%)
+  Platelets: 14 (6.51%)
+
+Tất cả tỷ lệ nằm trong khoảng tham chiếu lam máu ngoại vi.
+
+KHUYẾN NGHỊ CHUNG:
+  • Tiếp tục theo dõi sức khỏe định kỳ.
+  • Kết quả chỉ mang tính hỗ trợ sàng lọc — không thay thế chẩn đoán y khoa.
+
+======================================================================

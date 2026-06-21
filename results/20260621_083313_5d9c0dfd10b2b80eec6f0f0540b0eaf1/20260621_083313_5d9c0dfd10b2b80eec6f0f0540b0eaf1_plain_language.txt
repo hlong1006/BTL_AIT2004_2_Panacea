@@ -1,0 +1,16 @@
+GIẢI THÍCH DỄ HIỂU
+==================================================
+
+Hệ thống đã phân tích ảnh lam máu và tìm thấy 215 tế bào:
+  • 194 hồng cầu (RBC) — chiếm 90.2%
+  • 7 bạch cầu (WBC) — chiếm 3.3%
+  • 14 tiểu cầu — chiếm 6.5%
+
+Hồng cầu vận chuyển oxy, bạch cầu chống nhiễm trùng, tiểu cầu giúp đông máu.
+
+Kết luận sơ bộ: Tỷ lệ tế bào trong field ảnh nằm trong khoảng bình thường. Tổng 215 tế bào: RBC 90.2%, WBC 3.3%, Platelets 6.5%.
+
+Lưu ý quan trọng:
+  • Đây là công cụ hỗ trợ AI, không thay thế bác sĩ.
+  • Cần xét nghiệm máu (CBC) tại phòng lab để xác nhận.
+  • Chất lượng ảnh và góc chụp ảnh hưởng đến độ chính xác.

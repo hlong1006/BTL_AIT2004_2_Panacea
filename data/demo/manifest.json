@@ -1,0 +1,22 @@
+{
+  "samples": [
+    {
+      "id": "demo_normal",
+      "file": "demo_normal.jpg",
+      "title": "Mẫu bình thường",
+      "description": "Tỷ lệ tế bào cân bằng"
+    },
+    {
+      "id": "demo_high_wbc",
+      "file": "demo_high_wbc.jpg",
+      "title": "Nhiều bạch cầu",
+      "description": "Có thể gợi ý tăng WBC"
+    },
+    {
+      "id": "demo_sparse",
+      "file": "demo_sparse.jpg",
+      "title": "Mẫu thưa tế bào",
+      "description": "Ít tế bào trong field"
+    }
+  ]
+}

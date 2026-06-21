@@ -121,6 +121,7 @@ class BloodCellAnalysisApp:
             "cell_percentages": result.stats.cell_percentages,
             "warnings": result.stats.warnings,
             "report_text": result.report_text,
+            "health_report": result.health_report.to_text() if result.health_report else "Không có báo cáo sức khỏe",
         }
         
         if save_reports and output_reports_dir:

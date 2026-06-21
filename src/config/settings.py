@@ -11,6 +11,9 @@ class ProjectPaths:
     processed_features: Path = root / "data" / "processed" / "features"
     yolo_models: Path = root / "models" / "yolo"
     ml_models: Path = root / "models" / "ml"
+    demo_images: Path = root / "data" / "demo"
+    test_images: Path = root / "data" / "test" / "images"
+    test_labels: Path = root / "data" / "test" / "labels"
 
 
 PATHS = ProjectPaths()

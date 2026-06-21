@@ -394,10 +394,51 @@ BTL_AIT2004_2_Panacea/
 ## Trạng thái dự án
 
 - Hoàn thành Pipeline End-to-End (YOLO + OpenCV + ML)
-- Hoàn thành giao diện Web (Flask)
-- Hỗ trợ CLI và Python API
-- Hỗ trợ xuất báo cáo đa định dạng (TXT, JSON, CSV, Excel)
-- Đã xử lý thành công 765 ảnh dữ liệu
+- Hoàn thành giao diện Web v2 (Flask) với biểu đồ Chart.js
+- Chẩn đoán sức khỏe máu dựa trên **tỷ lệ %** tế bào
+- Phát hiện tế bào bất thường (Anomaly Detection)
+- Giải thích AI (Permutation Importance / Feature Explanation)
+- So sánh YOLO-only vs Hybrid pipeline
+- Đánh giá Ground Truth (ảnh test set)
+- Ước lượng CBC, WBC subtype heuristic
+- Chế độ Demo, Batch upload, Webcam, Lịch sử
+- Xuất báo cáo PDF
+- Giải thích dễ hiểu (local + tùy chọn OpenAI API)
+- Docker, CLI, Python API, Unit tests
+
+---
+
+## Tính năng mới (v2)
+
+| Tính năng | Mô tả |
+|-----------|-------|
+| **Chẩn đoán sức khỏe** | So sánh tỷ lệ RBC/WBC/Platelets với ngưỡng lam máu |
+| **Biểu đồ Web** | Pie chart phân bố + bar chart so ngưỡng bình thường |
+| **Demo mode** | 3 ảnh mẫu sẵn có, phân tích 1 click |
+| **Confidence slider** | Điều chỉnh ngưỡng YOLO trên web |
+| **Batch upload** | Phân tích nhiều ảnh, so sánh tổng hợp |
+| **Webcam** | Chụp frame từ camera và phân tích |
+| **Lịch sử** | Xem lại 20 kết quả gần nhất |
+| **PDF export** | Báo cáo đầy đủ kèm ảnh |
+| **Explainability** | Giải thích đặc trưng quyết định phân loại |
+| **Anomaly detection** | Phát hiện tế bào hình thái bất thường |
+| **Ground Truth** | Precision/Recall/F1 với nhãn test set |
+| **Hybrid compare** | So sánh nhãn YOLO vs ML |
+| **CBC estimate** | Ước lượng nồng độ máu (tham khảo) |
+| **WBC subtype** | Gợi ý loại bạch cầu con (heuristic demo) |
+| **LLM explain** | Đặt `OPENAI_API_KEY` để giải thích bằng GPT |
+
+Chạy benchmark cho slide bảo vệ:
+
+```bash
+python scripts/generate_benchmark_report.py
+```
+
+Chạy unit tests:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
 
 ---
 
@@ -412,11 +453,12 @@ BTL_AIT2004_2_Panacea/
 
 ## Hướng phát triển
 
-- Mở rộng tập dữ liệu huấn luyện để tăng độ chính xác.
-- Triển khai trên nền tảng Cloud (AWS / Azure).
-- Xây dựng ứng dụng di động.
-- Tích hợp Explainable AI (SHAP, LIME) để giải thích quyết định phân loại.
-- Tích hợp với hệ thống quản lý bệnh viện (HIS).
+- Huấn luyện model WBC differential (Neutrophil, Lymphocyte...) với dataset chuyên biệt
+- Hiệu chuẩn CBC chính xác với máy đếm tự động
+- Triển khai Cloud (AWS / Azure)
+- Ứng dụng di động (React Native / Flutter)
+- Tích hợp SHAP đầy đủ khi có GPU
+- Tích hợp HIS bệnh viện
 
 ---
 

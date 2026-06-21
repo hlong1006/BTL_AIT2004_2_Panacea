@@ -1,0 +1,37 @@
+{
+  "total_cells": 215,
+  "cell_counts": {
+    "RBC": 194,
+    "WBC": 7,
+    "Platelets": 14
+  },
+  "cell_percentages": {
+    "RBC": 90.23255813953487,
+    "WBC": 3.255813953488372,
+    "Platelets": 6.511627906976744
+  },
+  "feature_stats": {
+    "RBC": {
+      "avg_area": 1452.6030927835052,
+      "avg_perimeter": 254.85300462885002,
+      "avg_circularity": 0.3328503286720563,
+      "avg_texture": 114.55444631863882
+    },
+    "WBC": {
+      "avg_area": 8178.642857142857,
+      "avg_perimeter": 746.9118600572858,
+      "avg_circularity": 0.20070018407798648,
+      "avg_texture": 85.60592553059385
+    },
+    "Platelets": {
+      "avg_area": 2015.0357142857142,
+      "avg_perimeter": 179.65736418110984,
+      "avg_circularity": 0.7428220697314386,
+      "avg_texture": 81.24070406331039
+    }
+  },
+  "warnings": [
+    "Ph\u00e1t hi\u1ec7n 3 v\u00f9ng c\u00f3 k\u00edch th\u01b0\u1edbc b\u1ea5t th\u01b0\u1eddng l\u1edbn \u2014 c\u00f3 th\u1ec3 l\u00e0 c\u1ee5m t\u1ebf b\u00e0o ch\u01b0a t\u00e1ch \u0111\u01b0\u1ee3c, k\u1ebft qu\u1ea3 ph\u00e2n lo\u1ea1i c\u00f3 th\u1ec3 kh\u00f4ng ch\u00ednh x\u00e1c",
+    "Ph\u00e1t hi\u1ec7n 7 t\u1ebf b\u00e0o h\u00ecnh th\u00e1i b\u1ea5t th\u01b0\u1eddng:\n  \u2022 T\u1ebf b\u00e0o #112 (RBC): \u0111i\u1ec3m b\u1ea5t th\u01b0\u1eddng 4.2 \u2014 area l\u1ec7ch 4.3\u03c3 (gi\u00e1 tr\u1ecb 5159.00, TB 1452.60); texture_laplacian_var l\u1ec7ch 4.2\u03c3 (gi\u00e1 tr\u1ecb 388.63, TB 114.55)\n  \u2022 T\u1ebf b"
+  ]
+}

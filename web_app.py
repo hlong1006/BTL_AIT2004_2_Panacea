@@ -1,308 +1,338 @@
 #!/usr/bin/env python3
-"""
-Ứng dụng Web Phát hiện & Phân loại Tế bào Máu
-Giao diện web dựa trên Flask cho Quy trình AI Lai (Hybrid AI Pipeline)
-"""
+"""Ứng dụng Web Phát hiện & Phân loại Tế bào Máu — Panacea v2."""
 
-import os
 import json
-from pathlib import Path
+import shutil
+import sys
 from datetime import datetime
-from werkzeug.utils import secure_filename
+from pathlib import Path
+from typing import Optional
+
 import cv2
 import numpy as np
-
-from flask import Flask, render_template, request, jsonify, send_file, url_for
+from flask import Flask, jsonify, render_template, request, send_file
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 
 from src.classification.ml_classifier import MLClassifier
 from src.config.settings import PATHS
-from src.detection.yolo_detector import YoloDetector
 from src.pipeline.end_to_end import HybridCellPipeline
 
-# ============================================================================
-# THIẾT LẬP ỨNG DỤNG FLASK
-# ============================================================================
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 app = Flask(__name__)
 CORS(app)
 
-# Cấu hình
-UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
-RESULTS_FOLDER = Path(__file__).parent / 'results'
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'bmp'}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+UPLOAD_FOLDER = Path(__file__).parent / "uploads"
+RESULTS_FOLDER = Path(__file__).parent / "results"
+DEMO_FOLDER = PATHS.demo_images
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "bmp"}
+MAX_FILE_SIZE = 50 * 1024 * 1024
 
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 RESULTS_FOLDER.mkdir(exist_ok=True)
+DEMO_FOLDER.mkdir(parents=True, exist_ok=True)
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-app.config['JSON_SORT_KEYS'] = False
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
 
-# ============================================================================
-# TẢI CÁC MÔ HÌNH
-# ============================================================================
+YOLO_MODEL = PATHS.yolo_models / "best.pt"
+ML_MODEL = PATHS.ml_models / "best_ml_model.pt"
+_pipeline: Optional[HybridCellPipeline] = None
+MODELS_LOADED = False
 
 try:
-    yolo_model_path = PATHS.yolo_models / "best.pt"
-    ml_model_path = PATHS.ml_models / "best_ml_model.pt"
-    
-    print(" Đang khởi tạo Quy trình...")
-    pipeline = HybridCellPipeline(yolo_model_path, ml_model_path)
-    print(" Quy trình đã sẵn sàng!")
+    _pipeline = HybridCellPipeline(YOLO_MODEL, ML_MODEL)
     MODELS_LOADED = True
-except Exception as e:
-    print(f" Lỗi khi tải mô hình: {e}")
-    MODELS_LOADED = False
-    pipeline = None
-
-# ============================================================================
-# CÁC HÀM HỖ TRỢ
-# ============================================================================
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    print("Pipeline sẵn sàng.")
+except Exception as exc:
+    print(f"Lỗi tải model: {exc}")
+    _pipeline = None
 
 
-def analyze_image_file(filepath, output_dir):
-    """Phân tích ảnh đơn và trả về kết quả"""
-    if not MODELS_LOADED or pipeline is None:
-        return {
-            "success": False,
-            "error": "Các mô hình chưa được tải. Vui lòng khởi động lại ứng dụng."
-        }
-    
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _result_to_response(result, image_path: Path, output_dir: Path) -> dict:
+    stem = image_path.stem
+    resp = {
+        "success": True,
+        "image_name": image_path.name,
+        "total_cells": result.stats.total_cells,
+        "cell_counts": result.stats.cell_counts,
+        "cell_percentages": result.stats.cell_percentages,
+        "warnings": result.stats.warnings,
+        "report": result.report_text,
+        "health_diagnosis": result.health_report.to_text() if result.health_report else "",
+        "health_status": result.health_report.overall_status.value if result.health_report else "",
+        "health_dict": result.health_report.to_dict() if result.health_report else {},
+        "plain_language": result.plain_language_summary or "",
+        "confidence_stats": result.confidence_stats,
+        "per_cell_confidence": result.per_cell_confidence[:50],
+        "anomalies": result.anomalies,
+        "explanation": result.explanation,
+        "global_importance": result.global_importance,
+        "cbc_estimate": result.cbc_estimate.to_dict() if result.cbc_estimate else {},
+        "hybrid_comparison": result.hybrid_comparison,
+        "ground_truth": result.ground_truth_metrics,
+        "wbc_subtypes": result.wbc_subtypes,
+        "output_image": str((output_dir / f"{stem}_analyzed.png").relative_to(Path(__file__).parent)),
+        "chart_data": {
+            "labels": list(result.stats.cell_counts.keys()),
+            "counts": list(result.stats.cell_counts.values()),
+            "percentages": [round(v, 2) for v in result.stats.cell_percentages.values()],
+            "normal_ranges": BloodHealthAnalyzer_ranges(),
+        },
+    }
+    for suffix, key in [
+        ("_report.json", "report_json"),
+        ("_summary.csv", "report_csv"),
+        ("_health_diagnosis.txt", "health_diagnosis_file"),
+        ("_report.pdf", "report_pdf"),
+        ("_plain_language.txt", "plain_language_file"),
+    ]:
+        p = output_dir / f"{stem}{suffix}"
+        if p.exists():
+            resp[key] = str(p.relative_to(Path(__file__).parent))
+    return resp
+
+
+def BloodHealthAnalyzer_ranges():
+    from src.diagnosis.blood_health_analyzer import BloodHealthAnalyzer
+    return {k: {"min": v["min"], "max": v["max"]} for k, v in BloodHealthAnalyzer.NORMAL_PERCENTAGE.items()}
+
+
+def analyze_image_file(filepath: Path, output_dir: Path, conf: float = 0.06, ml_conf: float = 0.0):
+    if not MODELS_LOADED or _pipeline is None:
+        return {"success": False, "error": "Models chưa tải."}
     try:
-        image_path = Path(filepath)
-        output_image_path = output_dir / f"{image_path.stem}_analyzed.png"
-        
-        # Chạy quy trình
-        result = pipeline.run_on_image_full(
-            image_path=image_path,
+        _pipeline.set_conf_threshold(conf)
+        output_image_path = output_dir / f"{filepath.stem}_analyzed.png"
+        result = _pipeline.run_on_image_full(
+            image_path=filepath,
             output_image_path=output_image_path,
             output_stats_dir=output_dir,
+            ml_confidence_threshold=ml_conf,
         )
-        
-        # Chuẩn bị phản hồi
-        response = {
-            "success": True,
-            "image_name": image_path.name,
-            "total_cells": result.stats.total_cells,
-            "cell_counts": result.stats.cell_counts,
-            "cell_percentages": result.stats.cell_percentages,
-            "warnings": result.stats.warnings,
-            "report": result.report_text,
-            "output_image": str(output_image_path.relative_to(Path(__file__).parent)),
-        }
-        
-        # Thêm liên kết tải xuống
-        if (output_dir / f"{image_path.stem}_report.json").exists():
-            response["report_json"] = str((output_dir / f"{image_path.stem}_report.json").relative_to(Path(__file__).parent))
-        if (output_dir / f"{image_path.stem}_summary.csv").exists():
-            response["report_csv"] = str((output_dir / f"{image_path.stem}_summary.csv").relative_to(Path(__file__).parent))
-            
-        return response
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return _result_to_response(result, filepath, output_dir)
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
 
-# ============================================================================
-# CÁC ĐỊNH TUYẾN (ROUTES)
-# ============================================================================
+def _load_demo_manifest():
+    manifest_path = DEMO_FOLDER / "manifest.json"
+    if manifest_path.exists():
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    return {"samples": []}
 
-@app.route('/')
+
+def _ensure_demo_images():
+    manifest_path = DEMO_FOLDER / "manifest.json"
+    if manifest_path.exists():
+        return
+    samples = [
+        ("demo_normal.jpg", "BloodImage_00038_jpg.rf.ffa23e4b5b55b523367f332af726eae8.jpg", "Mẫu bình thường", "Tỷ lệ tế bào cân bằng"),
+        ("demo_high_wbc.jpg", "BloodImage_00337_jpg.rf.b6cb228440b9158cafec01a0351e3aad.jpg", "Nhiều bạch cầu", "Có thể gợi ý tăng WBC"),
+        ("demo_sparse.jpg", "BloodImage_00099_jpg.rf.e3c42cd68359527494a53843479dff5c.jpg", "Mẫu thưa tế bào", "Ít tế bào trong field"),
+    ]
+    demo_samples = []
+    for demo_name, src_name, title, desc in samples:
+        src = PATHS.test_images / src_name
+        dst = DEMO_FOLDER / demo_name
+        if src.exists() and not dst.exists():
+            shutil.copy2(src, dst)
+        if dst.exists():
+            demo_samples.append({"id": demo_name.replace(".jpg", ""), "file": demo_name, "title": title, "description": desc})
+    manifest_path.write_text(json.dumps({"samples": demo_samples}, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.route("/")
 def index():
-    """Trang chính"""
-    return render_template('index.html', models_loaded=MODELS_LOADED)
+    _ensure_demo_images()
+    return render_template("index.html", models_loaded=MODELS_LOADED)
 
 
-@app.route('/api/health', methods=['GET'])
+@app.route("/api/health")
 def health_check():
-    """Điểm cuối (endpoint) kiểm tra tình trạng hệ thống"""
-    return jsonify({
-        "status": "ok",
-        "models_loaded": MODELS_LOADED,
-        "timestamp": datetime.now().isoformat()
-    })
+    return jsonify({"status": "ok", "models_loaded": MODELS_LOADED, "timestamp": datetime.now().isoformat()})
 
 
-@app.route('/api/info', methods=['GET'])
+@app.route("/api/info")
 def system_info():
-    """Lấy thông tin hệ thống"""
     return jsonify({
         "status": "ready" if MODELS_LOADED else "error",
-        "system": "Blood Cell Detection & Classification",
-        "version": "1.0.0",
-        "models": {
-            "yolo": "best.pt",
-            "ml": "best_ml_model.pt"
-        },
-        "classes": {
-            0: "Platelets (Tiểu cầu)",
-            1: "RBC (Hồng cầu)",
-            2: "WBC (Bạch cầu)"
-        }
+        "system": "Panacea Blood Cell Analyzer v2",
+        "version": "2.0.0",
+        "features": [
+            "hybrid_pipeline", "health_diagnosis", "anomaly_detection",
+            "explainability", "cbc_estimate", "ground_truth", "batch_upload",
+            "demo_mode", "pdf_export", "webcam", "wbc_subtype_heuristic",
+        ],
+        "models": {"yolo": "best.pt", "ml": "best_ml_model.pt"},
+        "classes": {"0": "Platelets", "1": "RBC", "2": "WBC"},
     })
 
 
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    """Xử lý tải tệp lên và phân tích"""
-    
+@app.route("/api/demo/samples")
+def demo_samples():
+    _ensure_demo_images()
+    return jsonify({"success": True, "samples": _load_demo_manifest().get("samples", [])})
+
+
+@app.route("/api/demo/run/<sample_id>", methods=["POST"])
+def run_demo(sample_id):
     if not MODELS_LOADED:
-        return jsonify({
-            "success": False,
-            "error": "Hệ thống chưa sẵn sàng - các mô hình chưa được tải"
-        }), 503
-    
-    # Kiểm tra tệp
-    if 'file' not in request.files:
-        return jsonify({
-            "success": False,
-            "error": "Không có tệp nào được cung cấp"
-        }), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "success": False,
-            "error": "Chưa chọn tệp nào"
-        }), 400
-    
-    if not allowed_file(file.filename):
-        return jsonify({
-            "success": False,
-            "error": f"Loại tệp không được phép. Các loại được phép: {', '.join(ALLOWED_EXTENSIONS)}"
-        }), 400
-    
-    try:
-        # Lưu tệp đã tải lên
-        filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_")
-        filename = timestamp + filename
-        
+        return jsonify({"success": False, "error": "Models chưa tải."}), 503
+    _ensure_demo_images()
+    conf = float(request.json.get("conf", 0.06)) if request.is_json else 0.06
+    for s in _load_demo_manifest().get("samples", []):
+        if s["id"] == sample_id:
+            src = DEMO_FOLDER / s["file"]
+            if not src.exists():
+                return jsonify({"success": False, "error": "File demo không tồn tại."}), 404
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S_")
+            dst = UPLOAD_FOLDER / f"{ts}demo_{s['file']}"
+            shutil.copy2(src, dst)
+            out = RESULTS_FOLDER / dst.stem
+            out.mkdir(parents=True, exist_ok=True)
+            result = analyze_image_file(dst, out, conf=conf)
+            result["demo_id"] = sample_id
+            result["demo_title"] = s.get("title", "")
+            return jsonify(result)
+    return jsonify({"success": False, "error": "Không tìm thấy mẫu demo."}), 404
+
+
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
+    if not MODELS_LOADED:
+        return jsonify({"success": False, "error": "Models chưa tải."}), 503
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "Không có file."}), 400
+    file = request.files["file"]
+    if not file.filename or not allowed_file(file.filename):
+        return jsonify({"success": False, "error": "File không hợp lệ."}), 400
+
+    conf = float(request.form.get("conf", 0.06))
+    ml_conf = float(request.form.get("ml_conf", 0.0))
+
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S_") + secure_filename(file.filename)
+    filepath = UPLOAD_FOLDER / filename
+    file.save(str(filepath))
+    output_dir = RESULTS_FOLDER / filepath.stem
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return jsonify(analyze_image_file(filepath, output_dir, conf=conf, ml_conf=ml_conf))
+
+
+@app.route("/api/upload/batch", methods=["POST"])
+def upload_batch():
+    if not MODELS_LOADED:
+        return jsonify({"success": False, "error": "Models chưa tải."}), 503
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"success": False, "error": "Không có file."}), 400
+
+    conf = float(request.form.get("conf", 0.06))
+    results = []
+    for file in files:
+        if not file.filename or not allowed_file(file.filename):
+            results.append({"success": False, "image_name": file.filename, "error": "Invalid"})
+            continue
+        filename = datetime.now().strftime("%Y%m%d_%H%M%S_") + secure_filename(file.filename)
         filepath = UPLOAD_FOLDER / filename
         file.save(str(filepath))
-        
-        # Tạo thư mục đầu ra cho phân tích
-        output_dir = RESULTS_FOLDER / filename.split('.')[0]
+        output_dir = RESULTS_FOLDER / filepath.stem
         output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Phân tích
-        result = analyze_image_file(filepath, output_dir)
-        
-        if result['success']:
-            # Tạo ảnh thu nhỏ (thumbnail)
-            img = cv2.imread(str(filepath))
-            if img is not None:
-                height = img.shape[0]
-                scale = 300 / max(height, 1) if height > 300 else 1
-                thumb = cv2.resize(img, (int(img.shape[1] * scale), int(img.shape[0] * scale)))
-                thumb_path = output_dir / 'thumbnail.jpg'
-                cv2.imwrite(str(thumb_path), thumb)
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Lỗi máy chủ: {str(e)}"
-        }), 500
+        r = analyze_image_file(filepath, output_dir, conf=conf)
+        results.append(r)
+
+    ok = [r for r in results if r.get("success")]
+    return jsonify({
+        "success": True,
+        "total": len(results),
+        "successful": len(ok),
+        "failed": len(results) - len(ok),
+        "results": results,
+        "comparison": _batch_comparison(ok),
+    })
 
 
-@app.route('/api/results', methods=['GET'])
+def _batch_comparison(ok_results):
+    if not ok_results:
+        return {}
+    totals = {"RBC": 0, "WBC": 0, "Platelets": 0}
+    for r in ok_results:
+        for k, v in r.get("cell_counts", {}).items():
+            totals[k] = totals.get(k, 0) + v
+    return {"aggregate_counts": totals, "images": len(ok_results)}
+
+
+@app.route("/api/analyze-frame", methods=["POST"])
+def analyze_frame():
+    if not MODELS_LOADED:
+        return jsonify({"success": False, "error": "Models chưa tải."}), 503
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "Không có frame."}), 400
+    file = request.files["file"]
+    conf = float(request.form.get("conf", 0.06))
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_")
+    filepath = UPLOAD_FOLDER / f"{ts}webcam_frame.jpg"
+    file.save(str(filepath))
+    output_dir = RESULTS_FOLDER / filepath.stem
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return jsonify(analyze_image_file(filepath, output_dir, conf=conf))
+
+
+@app.route("/api/results")
 def get_results():
-    """Lấy danh sách các kết quả phân tích"""
     try:
         results = []
         for result_dir in sorted(RESULTS_FOLDER.iterdir(), reverse=True):
-            if result_dir.is_dir():
-                json_file = result_dir / f"{result_dir.name}_report.json"
-                if json_file.exists():
-                    with open(json_file, 'r') as f:
-                        data = json.load(f)
-                    results.append({
-                        "name": result_dir.name,
-                        "timestamp": result_dir.name.split('_')[0:3],
-                        "data": data
-                    })
-        
-        return jsonify({
-            "success": True,
-            "count": len(results),
-            "results": results[:10]  # Trả về 10 kết quả gần nhất
-        })
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+            if not result_dir.is_dir():
+                continue
+            json_file = result_dir / f"{result_dir.name}_report.json"
+            if json_file.exists():
+                with open(json_file, encoding="utf-8") as f:
+                    data = json.load(f)
+                img = result_dir / f"{result_dir.name}_analyzed.png"
+                results.append({
+                    "name": result_dir.name,
+                    "data": data,
+                    "thumbnail": str(img.relative_to(Path(__file__).parent)) if img.exists() else None,
+                })
+        return jsonify({"success": True, "count": len(results), "results": results[:20]})
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
-@app.route('/api/download/<path:filename>', methods=['GET'])
-def download_file(filename):
-    """Tải xuống tệp kết quả"""
-    try:
-        file_path = RESULTS_FOLDER / filename
-        if file_path.exists() and file_path.is_file():
-            return send_file(str(file_path), as_attachment=True)
-        else:
-            return jsonify({
-                "success": False,
-                "error": "Không tìm thấy tệp"
-            }), 404
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-
-@app.route('/results/<path:filename>', methods=['GET'])
+@app.route("/results/<path:filename>")
 def serve_result(filename):
-    """Cung cấp ảnh kết quả"""
-    try:
-        file_path = RESULTS_FOLDER / filename
-        if file_path.exists() and file_path.is_file():
-            return send_file(str(file_path))
-        else:
-            return "Không tìm thấy tệp", 404
-    except Exception as e:
-        return str(e), 500
+    fp = RESULTS_FOLDER / filename
+    if fp.exists() and fp.is_file():
+        return send_file(str(fp))
+    return "Not found", 404
 
 
-# ============================================================================
-# XỬ LÝ LỖI (ERROR HANDLERS)
-# ============================================================================
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Không tìm thấy"}), 404
-
-
-@app.errorhandler(500)
-def server_error(error):
-    return jsonify({"error": "Lỗi máy chủ"}), 500
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    fp = UPLOAD_FOLDER / filename
+    if fp.exists():
+        return send_file(str(fp))
+    return "Not found", 404
 
 
-# ============================================================================
-# CHƯƠNG TRÌNH CHÍNH
-# ============================================================================
+@app.route("/demo/<path:filename>")
+def serve_demo(filename):
+    fp = DEMO_FOLDER / filename
+    if fp.exists():
+        return send_file(str(fp))
+    return "Not found", 404
 
-if __name__ == '__main__':
-    print("="*60)
-    print(" Ứng dụng Web Phân tích Tế bào Máu")
-    print("="*60)
-    print(f"Thư mục tải lên: {UPLOAD_FOLDER}")
-    print(f"Thư mục kết quả: {RESULTS_FOLDER}")
-    print(f"Các mô hình đã tải: {MODELS_LOADED}")
-    print("\n Đang khởi động máy chủ Flask...")
-    print("   URL: http://localhost:5000")
-    print("="*60)
-    
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+
+if __name__ == "__main__":
+    _ensure_demo_images()
+    print("=" * 60)
+    print(" Panacea Web v2 — http://localhost:5000")
+    print("=" * 60)
+    app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=False)

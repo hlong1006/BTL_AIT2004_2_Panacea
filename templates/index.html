@@ -3,496 +3,461 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Phân tích Tế bào Máu</title>
+    <title>Panacea — Phân tích Tế bào Máu AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .container { max-width: 1280px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 24px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 6px; }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .tab {
+            padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.2); color: white; font-size: 0.95em;
         }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
+        .tab.active { background: white; color: #667eea; font-weight: bold; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
-
-        .card h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-        }
-
+        .card h2 { color: #667eea; margin-bottom: 16px; font-size: 1.3em; }
         .upload-area {
-            border: 3px dashed #667eea;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #f8f9ff;
+            border: 3px dashed #667eea; border-radius: 8px; padding: 32px;
+            text-align: center; cursor: pointer; background: #f8f9ff; transition: 0.2s;
         }
-
-        .upload-area:hover {
-            border-color: #764ba2;
-            background: #f0f2ff;
+        .upload-area:hover, .upload-area.dragover { background: #e8edff; border-color: #764ba2; }
+        #fileInput, #batchInput { display: none; }
+        button, .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none;
+            padding: 10px 22px; border-radius: 6px; cursor: pointer; font-size: 0.95em; margin: 4px;
         }
-
-        .upload-area.dragover {
-            border-color: #764ba2;
-            background: #e8edff;
-        }
-
-        .upload-area p {
-            color: #666;
-            margin: 10px 0;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 15px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .results {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .results h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-        }
-
-        .result-item {
-            background: #f8f9ff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-        }
-
-        .result-item h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 15px 0;
-        }
-
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #6c757d; }
+        .status { padding: 12px; border-radius: 6px; margin: 10px 0; text-align: center; font-weight: 600; }
+        .status.loading { background: #fff3cd; color: #856404; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .hidden { display: none !important; }
+        .slider-row { margin: 12px 0; }
+        .slider-row label { display: block; margin-bottom: 4px; color: #444; font-size: 0.9em; }
+        input[type=range] { width: 100%; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
         .stat-box {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            text-align: center;
+            background: #f8f9ff; padding: 14px; border-radius: 8px; text-align: center;
             border: 1px solid #e0e0e0;
         }
-
-        .stat-box .label {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .stat-box .value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .status {
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .status.loading {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
-        }
-
+        .stat-box .value { font-size: 1.8em; font-weight: bold; color: #667eea; }
+        .stat-box .label { font-size: 0.85em; color: #666; }
         .alert-warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            color: #856404;
+            background: #fff3cd; border-left: 4px solid #ffc107;
+            padding: 12px; border-radius: 4px; margin: 10px 0; color: #856404;
         }
-
-        .image-preview {
-            max-width: 100%;
-            border-radius: 6px;
-            margin: 15px 0;
+        .health-badge {
+            display: inline-block; padding: 8px 16px; border-radius: 20px;
+            font-weight: bold; margin: 8px 0;
         }
-
-        .download-links {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
+        .health-normal { background: #d4edda; color: #155724; }
+        .health-warning { background: #fff3cd; color: #856404; }
+        .health-abnormal { background: #f8d7da; color: #721c24; }
+        .health-critical { background: #dc3545; color: white; }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+        .chart-box { background: #fafbff; padding: 12px; border-radius: 8px; }
+        .image-preview { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+        .download-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
         .download-links a {
-            color: #667eea;
-            text-decoration: none;
-            padding: 8px 12px;
-            background: #f0f2ff;
-            border-radius: 4px;
-            font-size: 0.9em;
-            transition: all 0.2s;
+            color: #667eea; text-decoration: none; padding: 6px 12px;
+            background: #f0f2ff; border-radius: 4px; font-size: 0.85em;
         }
-
-        .download-links a:hover {
-            background: #667eea;
-            color: white;
+        .download-links a:hover { background: #667eea; color: white; }
+        details { margin: 10px 0; }
+        summary { cursor: pointer; color: #667eea; font-weight: 600; padding: 4px 0; }
+        pre {
+            background: #f8f9ff; padding: 12px; border-radius: 6px;
+            overflow-x: auto; font-size: 0.8em; white-space: pre-wrap;
         }
-
-        .info-box {
-            background: #e8edff;
-            padding: 15px;
-            border-radius: 6px;
-            border-left: 4px solid #667eea;
-            margin: 15px 0;
+        .demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .demo-card {
+            border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            cursor: pointer; transition: 0.2s; text-align: center;
         }
-
-        .info-box p {
-            color: #333;
-            margin: 5px 0;
+        .demo-card:hover { border-color: #667eea; background: #f8f9ff; }
+        .history-item {
+            border: 1px solid #eee; border-radius: 8px; padding: 12px; margin: 8px 0;
+            display: flex; gap: 12px; align-items: center;
         }
-
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .hidden {
-            display: none;
+        .history-item img { width: 80px; height: 60px; object-fit: cover; border-radius: 4px; }
+        #webcamVideo { width: 100%; max-width: 480px; border-radius: 8px; background: #000; }
+        @media (max-width: 900px) {
+            .grid, .chart-row, .stats { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1> Hệ thống Phân tích Tế bào Máu</h1>
-            <p>Phát hiện & Phân loại Tế bào Máu bằng công nghệ AI</p>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>Panacea — Phân tích Tế bào Máu AI</h1>
+        <p>Hybrid Pipeline: YOLOv8 + OpenCV + Machine Learning</p>
+    </div>
 
-        <div class="main-content">
+    <div class="tabs">
+        <button class="tab active" data-tab="upload">Tải ảnh</button>
+        <button class="tab" data-tab="batch">Hàng loạt</button>
+        <button class="tab" data-tab="demo">Demo mẫu</button>
+        <button class="tab" data-tab="webcam">Webcam</button>
+        <button class="tab" data-tab="history">Lịch sử</button>
+    </div>
+
+    <!-- UPLOAD -->
+    <div id="panel-upload" class="panel active">
+        <div class="grid">
             <div class="card">
-                <h2> Tải ảnh lên</h2>
-                
+                <h2>Tải ảnh lên</h2>
                 <div id="status" class="status hidden"></div>
-                <div class="progress-bar"><div class="progress" id="progressBar"></div></div>
-
+                <div class="slider-row">
+                    <label>YOLO Confidence: <span id="confVal">0.06</span></label>
+                    <input type="range" id="confSlider" min="0.01" max="0.5" step="0.01" value="0.06">
+                </div>
                 <div class="upload-area" id="uploadArea">
-                    <p> Nhấp hoặc kéo thả ảnh vào đây</p>
-                    <p style="font-size: 0.9em; color: #999;">JPG, PNG, BMP (Tối đa 50MB)</p>
+                    <p>Nhấp hoặc kéo thả ảnh</p>
+                    <p style="font-size:0.85em;color:#999;">JPG, PNG, BMP (max 50MB)</p>
                     <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp">
                 </div>
-
-                <button onclick="document.getElementById('fileInput').click()">
-                    Chọn tệp
-                </button>
-
-                <div id="info" class="info-box hidden">
-                    <p><strong>Trạng thái hệ thống:</strong> Sẵn sàng</p>
-                    
-                </div>
+                <button onclick="document.getElementById('fileInput').click()">Chọn tệp</button>
             </div>
-
             <div class="card">
-                <h2> Cách thức hoạt động</h2>
-                <p style="margin: 10px 0; line-height: 1.6;">
-                    <strong>Bước 1:</strong> Tải lên ảnh vi thể mẫu máu<br>
-                    <strong>Bước 2:</strong> YOLOv8 phát hiện vị trí các tế bào<br>
-                    <strong>Bước 3:</strong> OpenCV trích xuất đặc trưng<br>
-                    <strong>Bước 4:</strong> Mô hình Machine Learning phân loại tế bào<br>
-                    <strong>Bước 5:</strong> Xem kết quả & tải báo cáo xuống
-                </p>
-                
-                <h3 style="margin-top: 20px; color: #667eea;">Các loại tế bào</h3>
-                <div class="stat-box" style="text-align: left; margin: 10px 0;">
-                    <p>🔴 <strong>RBC</strong> (Hồng cầu) - Tế bào vận chuyển oxy</p>
-                    <p>⚪ <strong>WBC</strong> (Bạch cầu) - Tế bào hệ miễn dịch</p>
-                    <p>🟡 <strong>Platelets</strong> (Tiểu cầu) - Tế bào đông máu</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="results">
-            <h2> Kết quả phân tích</h2>
-            
-            <div id="resultContainer" class="hidden">
-                <div id="resultContent"></div>
-            </div>
-
-            <div id="noResults" style="text-align: center; color: #999; padding: 40px;">
-                <p>Chưa có phân tích nào được thực hiện</p>
-                <p style="font-size: 0.9em;">Tải một bức ảnh lên để bắt đầu</p>
+                <h2>Tính năng hệ thống</h2>
+                <ul style="line-height:1.8;padding-left:20px;color:#444;">
+                    <li>Phát hiện & phân loại RBC, WBC, Platelets</li>
+                    <li>Chẩn đoán sức khỏe máu (tỷ lệ %)</li>
+                    <li>Phát hiện tế bào bất thường</li>
+                    <li>Giải thích AI (Explainability)</li>
+                    <li>So sánh YOLO vs Hybrid</li>
+                    <li>Ground Truth (ảnh test set)</li>
+                    <li>Ước lượng CBC & WBC subtype</li>
+                    <li>Xuất PDF, JSON, CSV, Excel</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <script>
-        // Các phần tử DOM
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const status = document.getElementById('status');
-        const progressBar = document.getElementById('progressBar');
-        const resultContainer = document.getElementById('resultContainer');
-        const noResults = document.getElementById('noResults');
-        const resultContent = document.getElementById('resultContent');
-        const info = document.getElementById('info');
+    <!-- BATCH -->
+    <div id="panel-batch" class="panel">
+        <div class="card">
+            <h2>Phân tích hàng loạt</h2>
+            <input type="file" id="batchInput" accept=".jpg,.jpeg,.png,.bmp" multiple>
+            <button onclick="document.getElementById('batchInput').click()">Chọn nhiều ảnh</button>
+            <button onclick="uploadBatch()">Phân tích tất cả</button>
+            <div id="batchStatus" class="status hidden"></div>
+            <div id="batchResults"></div>
+        </div>
+    </div>
 
-        // Các sự kiện khu vực tải lên
-        uploadArea.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                uploadFile();
-            }
-        });
+    <!-- DEMO -->
+    <div id="panel-demo" class="panel">
+        <div class="card">
+            <h2>Chế độ Demo — Ảnh mẫu có sẵn</h2>
+            <p style="color:#666;margin-bottom:12px;">Nhấn vào mẫu để phân tích ngay (không cần upload).</p>
+            <div id="demoGrid" class="demo-grid"></div>
+        </div>
+    </div>
 
-        fileInput.addEventListener('change', uploadFile);
+    <!-- WEBCAM -->
+    <div id="panel-webcam" class="panel">
+        <div class="card">
+            <h2>Phân tích từ Webcam</h2>
+            <video id="webcamVideo" autoplay playsinline></video>
+            <div style="margin-top:12px;">
+                <button onclick="startWebcam()">Bật camera</button>
+                <button onclick="captureFrame()">Chụp & Phân tích</button>
+                <button class="secondary" onclick="stopWebcam()">Tắt camera</button>
+            </div>
+            <canvas id="webcamCanvas" class="hidden"></canvas>
+            <div id="webcamStatus" class="status hidden"></div>
+        </div>
+    </div>
 
-        // Hàm tải lên
-        async function uploadFile() {
-            const file = fileInput.files[0];
-            if (!file) return;
+    <!-- HISTORY -->
+    <div id="panel-history" class="panel">
+        <div class="card">
+            <h2>Lịch sử phân tích</h2>
+            <button onclick="loadHistory()">Làm mới</button>
+            <div id="historyList" style="margin-top:12px;"></div>
+        </div>
+    </div>
 
-            // Hiển thị trạng thái
-            status.classList.remove('hidden', 'error', 'success');
-            status.classList.add('loading');
-            status.textContent = ' Đang xử lý...';
-            noResults.classList.add('hidden');
-            resultContainer.classList.add('hidden');
+    <!-- RESULTS -->
+    <div class="card" style="margin-top:20px;" id="resultsCard">
+        <h2>Kết quả phân tích</h2>
+        <div id="noResults" style="text-align:center;color:#999;padding:40px;">
+            Chưa có phân tích — tải ảnh hoặc chọn demo để bắt đầu
+        </div>
+        <div id="resultContainer" class="hidden"></div>
+    </div>
+</div>
 
-            // Tạo form data
-            const formData = new FormData();
-            formData.append('file', file);
+<script>
+let pieChart = null, barChart = null;
+let webcamStream = null;
 
-            try {
-                // Tải lên
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+const confSlider = document.getElementById('confSlider');
+const confVal = document.getElementById('confVal');
+confSlider.addEventListener('input', () => confVal.textContent = confSlider.value);
 
-                const data = await response.json();
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'history') loadHistory();
+        if (tab.dataset.tab === 'demo') loadDemoSamples();
+    });
+});
 
-                if (data.success) {
-                    displayResults(data);
-                    status.classList.remove('loading');
-                    status.classList.add('success');
-                    status.textContent = ' Phân tích hoàn tất!';
-                } else {
-                    status.classList.remove('loading');
-                    status.classList.add('error');
-                    status.textContent = ' Lỗi: ' + data.error;
-                }
-            } catch (error) {
-                status.classList.remove('loading');
-                status.classList.add('error');
-                status.textContent = ' Lỗi: ' + error.message;
-            }
+// Upload
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; uploadFile(); }
+});
+fileInput.addEventListener('change', uploadFile);
 
-            // Đặt lại thanh tiến trình
-            setTimeout(() => {
-                progressBar.style.width = '0%';
-            }, 500);
+async function uploadFile() {
+    const file = fileInput.files[0];
+    if (!file) return;
+    await analyzeWithForm('/api/upload', buildFormData(file), document.getElementById('status'));
+}
+
+function buildFormData(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('conf', confSlider.value);
+    return fd;
+}
+
+async function analyzeWithForm(url, formData, statusEl) {
+    statusEl.classList.remove('hidden', 'error', 'success');
+    statusEl.classList.add('loading');
+    statusEl.textContent = 'Đang xử lý...';
+    try {
+        const res = await fetch(url, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            statusEl.classList.remove('loading');
+            statusEl.classList.add('success');
+            statusEl.textContent = 'Hoàn tất!';
+            displayResults(data);
+        } else {
+            statusEl.classList.remove('loading');
+            statusEl.classList.add('error');
+            statusEl.textContent = 'Lỗi: ' + data.error;
         }
+    } catch (e) {
+        statusEl.classList.remove('loading');
+        statusEl.classList.add('error');
+        statusEl.textContent = 'Lỗi: ' + e.message;
+    }
+}
 
-        // Hiển thị kết quả
-        function displayResults(data) {
-            const rbc = data.cell_counts.RBC || 0;
-            const wbc = data.cell_counts.WBC || 0;
-            const platelets = data.cell_counts['Platelets'] || 0;
+async function uploadBatch() {
+    const files = document.getElementById('batchInput').files;
+    if (!files.length) return alert('Chọn ít nhất 1 ảnh');
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f);
+    fd.append('conf', confSlider.value);
+    const st = document.getElementById('batchStatus');
+    st.classList.remove('hidden'); st.classList.add('loading');
+    st.textContent = `Đang xử lý ${files.length} ảnh...`;
+    const res = await fetch('/api/upload/batch', { method: 'POST', body: fd });
+    const data = await res.json();
+    st.classList.remove('loading');
+    st.classList.add(data.success ? 'success' : 'error');
+    st.textContent = data.success ? `Xong: ${data.successful}/${data.total} ảnh` : data.error;
+    if (data.results && data.results.length) {
+        document.getElementById('batchResults').innerHTML = data.results.map((r, i) =>
+            r.success ? `<div class="alert-warning">${i+1}. ${r.image_name}: ${r.total_cells} tế bào — RBC ${r.cell_counts?.RBC||0}, WBC ${r.cell_counts?.WBC||0}</div>` : ''
+        ).join('');
+        if (data.results[0]?.success) displayResults(data.results[0]);
+    }
+}
 
-            const html = `
-                <div class="result-item">
-                    <h3>📷 ${data.image_name}</h3>
-                    ${data.output_image ? `<img src="${data.output_image}" class="image-preview" alt="Kết quả Phân tích">` : ''}
-                    
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="label">Tổng số tế bào</div>
-                            <div class="value">${data.total_cells}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="label">Hồng cầu (RBC)</div>
-                            <div class="value">${rbc}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="label">Bạch cầu (WBC)</div>
-                            <div class="value">${wbc}</div>
-                        </div>
-                    </div>
+async function loadDemoSamples() {
+    const res = await fetch('/api/demo/samples');
+    const data = await res.json();
+    document.getElementById('demoGrid').innerHTML = (data.samples || []).map(s => `
+        <div class="demo-card" onclick="runDemo('${s.id}')">
+            <strong>${s.title}</strong>
+            <p style="font-size:0.85em;color:#666;margin-top:6px;">${s.description}</p>
+        </div>
+    `).join('') || '<p>Không có mẫu demo.</p>';
+}
 
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="label">Tiểu cầu</div>
-                            <div class="value">${platelets}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="label">Tỷ lệ Hồng cầu</div>
-                            <div class="value">${(data.cell_percentages.RBC || 0).toFixed(1)}%</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="label">Tỷ lệ Bạch cầu</div>
-                            <div class="value">${(data.cell_percentages.WBC || 0).toFixed(1)}%</div>
-                        </div>
-                    </div>
+async function runDemo(id) {
+    const st = document.getElementById('status');
+    st.classList.remove('hidden'); st.classList.add('loading');
+    st.textContent = 'Đang phân tích mẫu demo...';
+    const res = await fetch(`/api/demo/run/${id}`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({conf: parseFloat(confSlider.value)})
+    });
+    const data = await res.json();
+    if (data.success) { st.classList.add('success'); st.textContent = 'Demo hoàn tất!'; displayResults(data); }
+    else { st.classList.add('error'); st.textContent = data.error; }
+    document.querySelector('[data-tab="upload"]').click();
+}
 
-                    ${data.warnings && data.warnings.length > 0 ? `
-                        <div class="alert alert-warning">
-                            <strong> Cảnh báo Lâm sàng:</strong><br>
-                            ${data.warnings.join('<br>')}
-                        </div>
-                    ` : ''}
+function healthClass(status) {
+    if (!status) return 'health-normal';
+    if (status.includes('Nguy')) return 'health-critical';
+    if (status.includes('Bất')) return 'health-abnormal';
+    if (status.includes('chú ý')) return 'health-warning';
+    return 'health-normal';
+}
 
-                    <div class="download-links">
-                        ${data.report_json ? `<a href="${data.report_json}" download> Báo cáo JSON</a>` : ''}
-                        ${data.report_csv ? `<a href="${data.report_csv}" download> Tóm tắt CSV</a>` : ''}
-                    </div>
+function displayResults(data) {
+    document.getElementById('noResults').classList.add('hidden');
+    const c = document.getElementById('resultContainer');
+    c.classList.remove('hidden');
 
-                    <details style="margin-top: 15px;">
-                        <summary style="cursor: pointer; color: #667eea; font-weight: bold;"> Báo cáo Đầy đủ</summary>
-                        <pre style="background: #f8f9ff; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; font-size: 0.8em;">${data.report || 'N/A'}</pre>
-                    </details>
-                </div>
-            `;
+    const rbc = data.cell_counts?.RBC || 0;
+    const wbc = data.cell_counts?.WBC || 0;
+    const plt = data.cell_counts?.Platelets || 0;
 
-            resultContent.innerHTML = html;
-            resultContainer.classList.remove('hidden');
-            noResults.classList.add('hidden');
-        }
+    c.innerHTML = `
+        <div>
+            <h3>${data.demo_title ? '🧪 ' + data.demo_title + ' — ' : ''}${data.image_name}</h3>
+            <span class="health-badge ${healthClass(data.health_status)}">${data.health_status || 'N/A'}</span>
+            ${data.output_image ? `<img src="/${data.output_image}" class="image-preview" alt="Kết quả">` : ''}
 
-        // Kiểm tra trạng thái hệ thống
-        async function checkStatus() {
-            try {
-                const response = await fetch('/api/health');
-                const data = await response.json();
-                if (data.models_loaded) {
-                    info.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('Kiểm tra trạng thái thất bại:', error);
-            }
-        }
+            <div class="stats">
+                <div class="stat-box"><div class="label">Tổng tế bào</div><div class="value">${data.total_cells}</div></div>
+                <div class="stat-box"><div class="label">RBC</div><div class="value">${rbc}</div></div>
+                <div class="stat-box"><div class="label">WBC</div><div class="value">${wbc}</div></div>
+                <div class="stat-box"><div class="label">Platelets</div><div class="value">${plt}</div></div>
+                <div class="stat-box"><div class="label">% RBC</div><div class="value">${(data.cell_percentages?.RBC||0).toFixed(1)}%</div></div>
+                <div class="stat-box"><div class="label">% WBC</div><div class="value">${(data.cell_percentages?.WBC||0).toFixed(1)}%</div></div>
+            </div>
 
-        // Khởi tạo
-        checkStatus();
-    </script>
+            <div class="chart-row">
+                <div class="chart-box"><canvas id="pieChart"></canvas></div>
+                <div class="chart-box"><canvas id="barChart"></canvas></div>
+            </div>
+
+            ${data.warnings?.length ? `<div class="alert-warning"><strong>Cảnh báo:</strong><br>${data.warnings.join('<br>')}</div>` : ''}
+
+            <div class="download-links">
+                ${data.report_json ? `<a href="/${data.report_json}" download>JSON</a>` : ''}
+                ${data.report_csv ? `<a href="/${data.report_csv}" download>CSV</a>` : ''}
+                ${data.report_pdf ? `<a href="/${data.report_pdf}" download>PDF</a>` : ''}
+                ${data.health_diagnosis_file ? `<a href="/${data.health_diagnosis_file}" download>Chẩn đoán</a>` : ''}
+                ${data.plain_language_file ? `<a href="/${data.plain_language_file}" download>Giải thích</a>` : ''}
+            </div>
+
+            <details open><summary>Giải thích dễ hiểu</summary><pre>${esc(data.plain_language)}</pre></details>
+            <details><summary>Chẩn đoán sức khỏe máu</summary><pre>${esc(data.health_diagnosis)}</pre></details>
+            <details><summary>So sánh YOLO vs Hybrid</summary><pre>${esc(JSON.stringify(data.hybrid_comparison, null, 2))}</pre></details>
+            ${data.ground_truth ? `<details><summary>Ground Truth Metrics</summary><pre>${esc(JSON.stringify(data.ground_truth, null, 2))}</pre></details>` : ''}
+            <details><summary>Giải thích AI (Explainability)</summary><pre>${esc(data.explanation?.explanation_text || 'N/A')}</pre></details>
+            ${data.anomalies?.length ? `<details><summary>Tế bào bất thường (${data.anomalies.length})</summary><pre>${esc(JSON.stringify(data.anomalies, null, 2))}</pre></details>` : ''}
+            ${data.cbc_estimate?.rbc_per_ul ? `<details><summary>Ước lượng CBC</summary><pre>RBC: ${data.cbc_estimate.rbc_per_ul?.toFixed(2)} triệu/μL\nWBC: ${data.cbc_estimate.wbc_per_ul?.toFixed(2)} nghìn/μL\nPlatelets: ${data.cbc_estimate.platelets_per_ul?.toFixed(0)} nghìn/μL\n\n${data.cbc_estimate.disclaimer}</pre></details>` : ''}
+            ${data.wbc_subtypes?.length ? `<details><summary>WBC Subtype (heuristic)</summary><pre>${esc(JSON.stringify(data.wbc_subtypes, null, 2))}</pre></details>` : ''}
+            <details><summary>Báo cáo đầy đủ</summary><pre>${esc(data.report)}</pre></details>
+        </div>
+    `;
+
+    renderCharts(data);
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderCharts(data) {
+    const labels = Object.keys(data.cell_counts || {});
+    const counts = Object.values(data.cell_counts || {});
+    const colors = ['#FF6384','#36A2EB','#FFCE56','#4BC0C0'];
+
+    if (pieChart) pieChart.destroy();
+    if (barChart) barChart.destroy();
+
+    pieChart = new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: { labels, datasets: [{ data: counts, backgroundColor: colors }] },
+        options: { plugins: { title: { display: true, text: 'Phân bố tế bào' } } }
+    });
+
+    const ranges = data.chart_data?.normal_ranges || {};
+    const pcts = labels.map(l => data.cell_percentages?.[l] || 0);
+    const mins = labels.map(l => ranges[l]?.min || 0);
+    const maxs = labels.map(l => ranges[l]?.max || 100);
+
+    barChart = new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Thực tế %', data: pcts, backgroundColor: '#667eea' },
+                { label: 'Min bình thường %', data: mins, backgroundColor: '#d4edda' },
+                { label: 'Max bình thường %', data: maxs, backgroundColor: '#f8d7da' },
+            ]
+        },
+        options: { plugins: { title: { display: true, text: 'So với ngưỡng bình thường' } }, scales: { y: { beginAtZero: true } } }
+    });
+}
+
+async function loadHistory() {
+    const res = await fetch('/api/results');
+    const data = await res.json();
+    document.getElementById('historyList').innerHTML = (data.results || []).map(r => `
+        <div class="history-item">
+            ${r.thumbnail ? `<img src="/${r.thumbnail}" alt="">` : ''}
+            <div>
+                <strong>${r.name}</strong>
+                <p style="font-size:0.85em;color:#666;">${r.data?.total_cells || 0} tế bào</p>
+            </div>
+        </div>
+    `).join('') || '<p>Chưa có lịch sử.</p>';
+}
+
+async function startWebcam() {
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById('webcamVideo').srcObject = webcamStream;
+    } catch (e) { alert('Không truy cập được camera: ' + e.message); }
+}
+
+function stopWebcam() {
+    if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
+}
+
+async function captureFrame() {
+    const video = document.getElementById('webcamVideo');
+    const canvas = document.getElementById('webcamCanvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(async blob => {
+        const fd = new FormData();
+        fd.append('file', blob, 'frame.jpg');
+        fd.append('conf', confSlider.value);
+        await analyzeWithForm('/api/analyze-frame', fd, document.getElementById('webcamStatus'));
+        document.querySelector('[data-tab="upload"]').click();
+    }, 'image/jpeg');
+}
+
+loadDemoSamples();
+fetch('/api/health').then(r => r.json()).then(d => console.log('System:', d));
+</script>
 </body>
 </html>
