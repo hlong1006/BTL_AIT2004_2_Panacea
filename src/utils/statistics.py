@@ -1,36 +1,61 @@
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Any
 from collections import Counter
-
 import pandas as pd
 import json
 
-
 @dataclass
 class CellStatistics:
-    """Lưu trữ số liệu thống kê tế bào tổng hợp cho phân tích mẫu máu."""
+    """Thực thể lưu trữ và quản lý dữ liệu thống kê hình thái tế bào máu.
+    
+    Cấu trúc dữ liệu này phục vụ tầng phân tích dữ liệu tổng hợp từ Pipeline lai,
+    hỗ trợ lưu trữ số lượng phân bố, phân tách phân hệ cảnh báo kỹ thuật và lâm sàng.
+    """
     
     total_cells: int = 0
     cell_counts: Dict[str, int] = field(default_factory=dict)
     cell_percentages: Dict[str, float] = field(default_factory=dict)
     feature_stats: Dict[str, Dict[str, float]] = field(default_factory=dict)
-    warnings: List[str] = field(default_factory=list)
     
-    def add_warning(self, warning: str) -> None:
-        """Thêm thông báo cảnh báo vào phần thống kê."""
-        if warning not in self.warnings:
-            self.warnings.append(warning)
+    # Phân hệ lưu trữ cảnh báo tách biệt theo kiến trúc phần mềm y tế
+    system_warnings: List[str] = field(default_factory=list)
+    clinical_warnings: List[str] = field(default_factory=list)
+    
+    @property
+    def warnings(self) -> List[str]:
+        """Thuộc tính ảo (Property) gộp hai danh sách cảnh báo.
+        
+        Đảm bảo tính tương thích ngược (Backward Compatibility) đối với các module
+        giao diện (UI) hoặc API cũ đang gọi trường dữ liệu .warnings.
+        """
+        return self.clinical_warnings + self.system_warnings
+    
+    def add_system_warning(self, warning: str) -> None:
+        """Ghi nhận cảnh báo liên quan đến chất lượng dữ liệu đầu vào hoặc lỗi thuật toán."""
+        if warning not in self.system_warnings:
+            self.system_warnings.append(warning)
+            
+    def add_clinical_warning(self, warning: str) -> None:
+        """Ghi nhận cảnh báo bất thường về phân bố mật độ tế bào theo tiêu chuẩn lâm sàng."""
+        if warning not in self.clinical_warnings:
+            self.clinical_warnings.append(warning)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Chuyển đổi thống kê sang dạng từ điển."""
-        return asdict(self)
+        """Chuyển đổi thực thể sang cấu trúc từ điển (Dictionary).
+        
+        Đã được sửa lỗi logic (bug) để đảm bảo trường dữ liệu 'warnings' mở rộng
+        được tích hợp chính xác vào dữ liệu trả về cho API Web.
+        """
+        data = asdict(self)
+        data["warnings"] = self.warnings
+        return data
     
     def to_json(self, indent: int = 2) -> str:
-        """Chuyển đổi thống kê sang chuỗi JSON."""
-        return json.dumps(self.to_dict(), indent=indent)
+        """Chuỗi hóa cấu trúc thống kê sang định dạng JSON phục vụ truyền tải qua API."""
+        return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
     
     def to_dataframe(self) -> pd.DataFrame:
-        """Chuyển đổi tóm tắt thống kê sang DataFrame."""
+        """Chuyển đổi dữ liệu thống kê phân bố sang cấu trúc bảng Pandas DataFrame."""
         data = []
         for cell_type, count in self.cell_counts.items():
             percentage = self.cell_percentages.get(cell_type, 0.0)
@@ -43,219 +68,235 @@ class CellStatistics:
 
 
 class StatisticsCalculator:
-    """Tính toán thống kê từ các dự đoán về tế bào."""
+    """Hệ chuyên gia toán học tính toán chỉ số và phân tích logic lâm sàng.
     
-    # Các khoảng giá trị bình thường cho số lượng tế bào máu (giá trị tham chiếu)
-    NORMAL_RANGES = {
-        "RBC": {"min": 4.5, "max": 5.5, "unit": "triệu/μL"},       # Hồng cầu
-        "WBC": {"min": 4.5, "max": 11.0, "unit": "nghìn/μL"},      # Bạch cầu
-        "Platelets": {"min": 150, "max": 400, "unit": "nghìn/μL"}, # Tiểu cầu
-    }
+    Chịu trách nhiệm xử lý dữ liệu sau thực nghiệm (Post-processing) từ kết quả
+    dự đoán của mô hình học máy và đặc trưng trích xuất từ thị trường (Field of View).
+    """
     
     @staticmethod
-    def calculate_statistics(
-        labels: List[str],
-        features_df: pd.DataFrame
-    ) -> CellStatistics:
-        """Tính toán các số liệu thống kê toàn diện từ các dự đoán."""
+    def calculate_statistics(labels: List[str], features_df: pd.DataFrame) -> CellStatistics:
+        """Tính toán tổng hợp các chỉ số hình thái học và kích hoạt bộ lọc kiểm tra.
         
+        Args:
+            labels (List[str]): Danh sách nhãn phân loại thu được từ mô hình dự đoán.
+            features_df (pd.DataFrame): Bảng chứa các thuộc tính hình thái trích xuất qua OpenCV.
+            
+        Returns:
+            CellStatistics: Đối tượng chứa toàn bộ kết quả phân tích hệ thống.
+        """
         stats = CellStatistics()
         stats.total_cells = len(labels)
         
-        # Đếm tế bào theo loại
+        # Thống kê tần suất xuất hiện của từng loại tế bào
         counter = Counter(labels)
         stats.cell_counts = dict(counter)
         
-        # Tính toán tỷ lệ phần trăm
+        # Tính toán tỷ lệ phân bố phần trăm của các tập hợp tế bào
         if stats.total_cells > 0:
             for cell_type, count in stats.cell_counts.items():
-                percentage = (count / stats.total_cells) * 100
-                stats.cell_percentages[cell_type] = percentage
+                stats.cell_percentages[cell_type] = (count / stats.total_cells) * 100
         
-        # Tính toán thống kê đặc trưng cho từng loại tế bào
-        if features_df is not None and len(features_df) > 0:
+        # Xử lý và tính toán các giá trị đặc trưng hình thái học trung bình
+        if features_df is not None and not features_df.empty:
             features_df["predicted_label"] = labels
             for cell_type in stats.cell_counts.keys():
                 mask = features_df["predicted_label"] == cell_type
                 cell_features = features_df[mask]
                 
-                if len(cell_features) > 0:
+                if not cell_features.empty:
                     stats.feature_stats[cell_type] = {
-                        "avg_area": float(cell_features.get("area", pd.Series(0)).mean()),
-                        "avg_perimeter": float(cell_features.get("perimeter", pd.Series(0)).mean()),
-                        "avg_circularity": float(cell_features.get("circularity", pd.Series(0)).mean()),
-                        "avg_texture": float(cell_features.get("texture_laplacian_var", pd.Series(0)).mean()),
+                        "avg_area": float(cell_features.get("area", pd.Series([0])).mean()),
+                        "avg_perimeter": float(cell_features.get("perimeter", pd.Series([0])).mean()),
+                        "avg_circularity": float(cell_features.get("circularity", pd.Series([0])).mean()),
+                        "avg_texture": float(cell_features.get("texture_laplacian_var", pd.Series([0])).mean()),
                     }
         
-        # Tạo cảnh báo cho các giá trị bất thường
-        if features_df is not None and len(features_df) > 0 and "area" in features_df.columns:
+        # Module lọc nhiễu kỹ thuật: Phát hiện sự bất thường về diện tích mặt phẳng (tế bào dính chùm)
+        if features_df is not None and not features_df.empty and "area" in features_df.columns:
             areas = features_df["area"].dropna()
             if len(areas) > 0:
                 median_area = float(areas.median())
-                huge = areas[areas > median_area * 8]
-                if len(huge) > 0:
-                    stats.add_warning(
-                        f"Phát hiện {len(huge)} vùng có kích thước bất thường lớn — "
-                        "có thể là cụm tế bào chưa tách được, kết quả phân loại có thể không chính xác"
+                huge_cells = areas[areas > median_area * 8]
+                if len(huge_cells) > 0:
+                    percentage_huge = (len(huge_cells) / stats.total_cells) * 100
+                    stats.add_system_warning(
+                        f"Chất lượng mẫu thấp: Phát hiện {len(huge_cells)} cụm tế bào bị vón cục "
+                        f"(chiếm {percentage_huge:.1f}% vi trường). Thuật toán phân đoạn có thể đếm thiếu số lượng thực tế. "
+                        f"Khuyến nghị: Chuẩn bị lại tiêu bản máu mỏng hơn hoặc cấu hình lại tham số NMS."
                     )
 
+        # Kích hoạt hệ thống luật để duyệt tìm các dấu hiệu lâm sàng bất thường
         StatisticsCalculator._generate_warnings(stats)
-        
         return stats
     
     @staticmethod
     def _generate_warnings(stats: CellStatistics) -> None:
-        """Tạo cảnh báo cho các giá trị bất thường."""
+        """Hệ thống luật (Rule-based System) đánh giá tương quan tỷ lệ giữa các dòng tế bào.
         
+        Áp dụng các ngưỡng toán học sinh học dựa trên mối tương quan với dòng Hồng cầu (RBC)
+        để đưa ra các định hướng suy luận y khoa hỗ trợ người phân tích.
+        """
         total = stats.total_cells
         
-        # Kiểm tra số lượng RBC thấp (thiếu máu)
-        rbc_count = stats.cell_counts.get("RBC", 0)
-        if total > 0:
-            rbc_percentage = (rbc_count / total) * 100
-            if rbc_percentage < 40:
-                stats.add_warning(
-                    f"RBC thấp: {rbc_count} tế bào ({rbc_percentage:.1f}%) - "
-                    "Có thể là dấu hiệu thiếu máu hoặc rối loạn máu"
-                )
-        
-        # Kiểm tra số lượng WBC cao (tăng bạch cầu)
-        wbc_count = stats.cell_counts.get("WBC", 0)
-        if total > 0:
-            wbc_percentage = (wbc_count / total) * 100
-            if wbc_percentage > 20:
-                stats.add_warning(
-                    f"WBC cao: {wbc_count} tế bào ({wbc_percentage:.1f}%) - "
-                    "Có thể là dấu hiệu nhiễm trùng hoặc rối loạn miễn dịch"
-                )
-        
-        # Kiểm tra số lượng WBC thấp (giảm bạch cầu)
-        if total > 0 and wbc_percentage < 2:
-            stats.add_warning(
-                f"WBC cực thấp: {wbc_count} tế bào ({wbc_percentage:.1f}%) - "
-                "Có thể là dấu hiệu suy giảm miễn dịch nghiêm trọng"
-            )
-        
-        # Kiểm tra số lượng tiểu cầu bất thường
-        platelet_count = stats.cell_counts.get("Platelets", 0)
-        if total > 0:
-            platelet_percentage = (platelet_count / total) * 100
-            if platelet_percentage < 5:
-                stats.add_warning(
-                    f"Tiểu cầu cực thấp: {platelet_count} tế bào ({platelet_percentage:.1f}%) - "
-                    "Có thể là dấu hiệu giảm tiểu cầu"
-                )
-            elif platelet_percentage > 25:
-                stats.add_warning(
-                    f"Tiểu cầu cao: {platelet_count} tế bào ({platelet_percentage:.1f}%) - "
-                    "Có thể là dấu hiệu tăng tiểu cầu"
-                )
-        
-        # Cảnh báo nếu phát hiện rất ít tế bào
+        # Kiểm tra ngưỡng giới hạn biên của thị trường (Field of View - FOV)
         if total < 5:
-            stats.add_warning(
-                f"Phát hiện rất ít tế bào: {total} - "
-                "Ảnh có thể quá mờ/nhạt hoặc cần tăng độ phóng đại kính hiển vi"
-            )
+            stats.add_system_warning(f"Thị trường rỗng: Chỉ phát hiện {total} tế bào. Tiêu bản quá thưa hoặc ảnh bị mất nét.")
+            return  # Đình chỉ phân tích lâm sàng nếu mật độ tế bào không đạt mức tối thiểu
+            
+        if total > 800:
+            stats.add_system_warning(f"Mật độ tế bào cực cao ({total}): Cảnh báo rủi ro trùng lặp hoặc lỗi phân đoạn từ mô hình mạng.")
+
+        # Lấy số liệu phân bố của 3 dòng tế bào cốt lõi
+        rbc_count = stats.cell_counts.get("RBC", 0)
+        plt_count = stats.cell_counts.get("Platelets", 0)
+        wbc_count = stats.cell_counts.get("WBC", 0)
         
-        # Cảnh báo nếu số lượng tế bào quá nhiều (có thể do lỗi phân đoạn)
-        if total > 500:
-            stats.add_warning(
-                f"Số lượng tế bào rất cao: {total} - "
-                "Có thể cho thấy phân đoạn quá mức hoặc các tế bào bị kết tụ"
-            )
-    
+        if rbc_count > 0:
+            plt_to_rbc_ratio = plt_count / rbc_count
+            wbc_to_rbc_ratio = wbc_count / rbc_count
+            
+            # --- Khối logic đánh giá dòng Tiểu cầu (Platelets) ---
+            if plt_count == 0:
+                stats.add_clinical_warning(
+                    f"Giảm tiểu cầu nghiêm trọng (Mức độ Nặng): Tỷ lệ PLT:RBC = 0:{rbc_count} (0.0%). "
+                    f"Ngưỡng sinh lý tham chiếu tiêu chuẩn ~ 1:20. Nguy cơ xuất huyết cao. "
+                    f"Khuyến nghị: Chỉ định kiểm tra tế bào học dòng tiểu cầu bằng máy đếm laser (CBC)."
+                )
+            elif plt_to_rbc_ratio < 0.025:
+                stats.add_clinical_warning(
+                    f"Giảm tiểu cầu (Theo dõi sinh lý): Tỷ lệ PLT:RBC hiện tại là {plt_count}:{rbc_count} ({plt_to_rbc_ratio*100:.1f}%). "
+                    f"Dưới ngưỡng phân bố sinh lý trung bình (~ 5%). Cần đối chiếu thêm trên các vi trường lân cận."
+                )
+            elif plt_to_rbc_ratio > 0.2:
+                stats.add_clinical_warning(
+                    f"Tăng tiểu cầu bất thường: Tỷ lệ PLT:RBC tăng cao ({plt_to_rbc_ratio*100:.1f}%). "
+                    f"Dấu hiệu cảnh báo phản ứng viêm cấp tính hoặc hội chứng tăng sinh tủy xương."
+                )
+                
+            # --- Khối logic đánh giá dòng Bạch cầu (WBC) ---
+            if wbc_to_rbc_ratio > 0.05:
+                stats.add_clinical_warning(
+                    f"Tăng bạch cầu bệnh lý (Leukocytosis): Tỷ lệ WBC:RBC đạt mức báo động {wbc_count}:{rbc_count}. "
+                    f"Mật độ bạch cầu quá dày đặc trên một trường hiển vi, phản ánh phản ứng nhiễm trùng cấp hoặc bệnh lý ác tính hệ tạo máu."
+                )
+            elif wbc_count > 0 and wbc_to_rbc_ratio > 0.02:
+                stats.add_clinical_warning(
+                    f"Theo dõi động học Bạch cầu: Phát hiện mật độ WBC cao hơn phân bố sinh lý thông thường "
+                    f"trên vi trường khảo sát (Tỷ lệ {wbc_count}:{rbc_count})."
+                )
+        else:
+            stats.add_system_warning("Không tìm thấy Hồng cầu (RBC). Hệ thống mất điểm quy chiếu nền để tính toán chỉ số lâm sàng.")
+
     @staticmethod
     def generate_report_text(stats: CellStatistics, image_name: str = "Blood Sample") -> str:
-        """Tạo báo cáo dạng văn bản."""
+        """Sinh tài liệu báo cáo phân tích định dạng văn bản chuẩn hóa.
         
+        Tích hợp đầy đủ các phần biểu đồ phân bố, số liệu hình thái học trung bình,
+        phân hệ kết luận lâm sàng và thông báo miễn trừ trách nhiệm y khoa.
+        """
         report = []
-        report.append("=" * 60)
-        report.append("BÁO CÁO PHÂN TÍCH TẾ BÀO MÁU")
-        report.append("=" * 60)
-        report.append(f"\nMẫu: {image_name}")
-        report.append(f"\nTổng số tế bào được phát hiện: {stats.total_cells}")
-        report.append("\n" + "-" * 60)
-        report.append("TÓM TẮT SỐ LƯỢNG TẾ BÀO")
-        report.append("-" * 60)
+        report.append("=" * 70)
+        report.append("BÁO CÁO PHÂN TÍCH HÌNH THÁI TẾ BÀO MÁU (HYBRID AI PIPELINE)")
+        report.append("=" * 70)
+        report.append(f"\nTên tệp mẫu: {image_name}")
+        report.append(f"Tổng số phần tử nhận diện: {stats.total_cells}")
         
-        # Sắp xếp theo số lượng (giảm dần)
+        report.append("\n" + "-" * 70)
+        report.append("TẦN SUẤT PHÂN BỐ CÁC DÒNG TẾ BÀO")
+        report.append("-" * 70)
         sorted_cells = sorted(stats.cell_counts.items(), key=lambda x: x[1], reverse=True)
-        
         for cell_type, count in sorted_cells:
             percentage = stats.cell_percentages.get(cell_type, 0.0)
-            bar_length = int(percentage / 2)  # Tỷ lệ hiển thị tối đa 50 ký tự
+            bar_length = int(percentage / 2)
             bar = "█" * bar_length + "░" * (50 - bar_length)
-            report.append(f"\n{cell_type:12} | {count:4d} | {percentage:6.2f}% | {bar}")
-        
-        # Thống kê đặc trưng
-        if stats.feature_stats:
-            report.append("\n" + "-" * 60)
-            report.append("ĐẶC TRƯNG HÌNH THÁI (Trung bình theo loại tế bào)")
-            report.append("-" * 60)
+            report.append(f"{cell_type:12} | {count:4d} | {percentage:6.2f}% | {bar}")
             
+        # Trực quan hóa số liệu trích xuất đặc trưng hình thái
+        if stats.feature_stats:
+            report.append("\n" + "-" * 70)
+            report.append("ĐẶC TRƯNG HÌNH THÁI HỌC TRUNG BÌNH (OpenCV Extraction)")
+            report.append("-" * 70)
             for cell_type, features in stats.feature_stats.items():
-                report.append(f"\n{cell_type}:")
-                report.append(f"   • Diện tích trung bình:     {features.get('avg_area', 0):.2f} px²")
-                report.append(f"   • Chu vi trung bình:       {features.get('avg_perimeter', 0):.2f} px")
-                report.append(f"   • Độ tròn trung bình:      {features.get('avg_circularity', 0):.4f}")
-                report.append(f"   • Kết cấu trung bình:      {features.get('avg_texture', 0):.4f}")
+                report.append(f"\n[{cell_type}]")
+                report.append(f"  • Diện tích trung bình (Area):         {features.get('avg_area', 0):.2f} px²")
+                report.append(f"  • Độ tròn trung bình (Circularity):   {features.get('avg_circularity', 0):.4f}")
         
-        # Cảnh báo
-        if stats.warnings:
-            report.append("\n" + "!" * 60)
-            report.append("CẢNH BÁO LÂM SÀNG")
-            report.append("!" * 60)
-            for i, warning in enumerate(stats.warnings, 1):
-                report.append(f"\n{i}. {warning}")
+        # Hiển thị phân hệ chẩn đoán logic lâm sàng
+        report.append("\n" + "!" * 70)
+        report.append("KẾT LUẬN LÂM SÀNG SƠ BỘ (CLINICAL FINDINGS)")
+        report.append("!" * 70)
+        if stats.clinical_warnings:
+            for i, warning in enumerate(stats.clinical_warnings, 1):
+                report.append(f" 🩺 {i}. {warning}")
         else:
-            report.append("\n" + "✓" * 60)
-            report.append("Không phát hiện kết quả bất thường.")
-            report.append("✓" * 60)
+            report.append(" ✓ Các chỉ số phân bố dòng tế bào trên vi trường này nằm trong giới hạn sinh lý bình thường.")
+
+        # Hiển thị phân hệ cảnh báo chất lượng thuật toán và kỹ thuật ảnh
+        if stats.system_warnings:
+            report.append("\n" + "⚙️" * 35)
+            report.append("ĐÁNH GIÁ CHẤT LƯỢNG KỸ THUẬT TIÊU BẢN (SYSTEM ALERTS)")
+            report.append("⚙️" * 35)
+            for i, warning in enumerate(stats.system_warnings, 1):
+                report.append(f" ⚠️ {i}. {warning}")
+                
+        # THÊM ĐOẠN NÀY: Khối thông báo cấu trúc và miễn trừ trách nhiệm pháp lý y tế
+        report.append("\n" + "=" * 70)
+        report.append("LƯU Ý HỆ THỐNG / DISCLAIMER:")
+        report.append("Hệ thống hiện đang hoạt động ở giai đoạn thử nghiệm thuật toán (Proof of Concept).")
+        report.append("Các biểu hiện lâm sàng được suy luận tự động thông qua hệ chuyên gia dựa trên")
+        report.append("quy tắc tương quan mật độ hình ảnh, chỉ có ý nghĩa hỗ trợ nghiên cứu viên.")
+        report.append("Kết quả này KHÔNG THAY THẾ cho các quyết định chẩn đoán lâm sàng của bác sĩ.")
+        report.append("Vui lòng đối chiếu với dữ liệu tổng phân tích tế bào máu ngoại vi thu được từ")
+        report.append("hệ thống máy đếm tổng trở hoặc máy đếm laser chuyên dụng.")
+        report.append("=" * 70)
         
-        report.append("\n" + "=" * 60)
         return "\n".join(report)
 
 
 class ReportExporter:
-    """Xuất số liệu thống kê sang nhiều định dạng tệp khác nhau."""
+    """Module phụ trợ chịu trách nhiệm kết xuất và lưu trữ tài liệu đa định dạng."""
     
     @staticmethod
     def to_csv(stats: CellStatistics, output_path: str) -> None:
-        """Xuất thống kê sang CSV."""
+        """Lưu trữ dữ liệu phân bố tóm tắt dưới định dạng phẳng CSV."""
         df = stats.to_dataframe()
         df.to_csv(output_path, index=False)
     
     @staticmethod
     def to_json(stats: CellStatistics, output_path: str) -> None:
-        """Xuất thống kê sang JSON."""
+        """Lưu trữ toàn bộ thuộc tính cấu trúc đối tượng sang tệp JSON."""
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(stats.to_json(indent=2))
     
     @staticmethod
     def to_txt(report_text: str, output_path: str) -> None:
-        """Xuất báo cáo văn bản sang tệp."""
+        """Xuất tệp văn bản thuần báo cáo kết luận phân tích."""
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(report_text)
     
     @staticmethod
     def to_excel(stats: CellStatistics, features_df: pd.DataFrame, output_path: str) -> None:
-        """Xuất sang Excel với nhiều trang tính (sheet)."""
+        """Đóng gói dữ liệu thực nghiệm đa tầng vào bảng tính Excel (Multi-sheets)."""
         try:
             with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-                # Trang tóm tắt
+                # Sheet 1: Tổng quan phân bố tần suất
                 summary_df = stats.to_dataframe()
                 summary_df.to_excel(writer, sheet_name="Summary", index=False)
                 
-                # Trang chi tiết
-                if features_df is not None and len(features_df) > 0:
+                # Sheet 2: Chi tiết 20 thông số hình thái học của từng phần tử tế bào
+                if features_df is not None and not features_df.empty:
                     features_df.to_excel(writer, sheet_name="Cell Details", index=False)
                 
-                # Trang cảnh báo
-                if stats.warnings:
-                    warnings_df = pd.DataFrame({
-                        "Alert": stats.warnings
-                    })
+                # Sheet 3: Nhật ký phân loại cảnh báo hệ thống và lâm sàng
+                all_alerts = []
+                for w in stats.clinical_warnings:
+                    all_alerts.append({"Phân hệ": "Lâm sàng (Medical)", "Nội dung chỉ định": w})
+                for w in stats.system_warnings:
+                    all_alerts.append({"Phân hệ": "Hệ thống (System)", "Nội dung chỉ định": w})
+                    
+                if all_alerts:
+                    warnings_df = pd.DataFrame(all_alerts)
                     warnings_df.to_excel(writer, sheet_name="Warnings", index=False)
         except ImportError:
-            print("Chưa cài đặt openpyxl. Bỏ qua xuất Excel.")
+            print("[Hệ thống] Thư viện openpyxl chưa được cài đặt. Tiến trình xuất Excel bị bỏ qua.")

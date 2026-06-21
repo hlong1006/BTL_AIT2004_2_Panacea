@@ -1,3 +1,21 @@
+# ==========================================
+# 1. THƯ MỤC SINH TỰ ĐỘNG (Sinh ra lúc chạy App)
+# ==========================================
+# Của Ultralytics YOLO (Lưu log train và predict)
+runs/
+*.cache
+
+# Của giao diện Web Flask (Tránh commit ảnh test của người dùng lên mạng)
+uploads/*
+!uploads/.gitkeep
+results/*
+!results/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# ==========================================
+# 2. PYTHON & MÔI TRƯỜNG VIRTUAL
+# ==========================================
 __pycache__/
 *.pyc
 *.pyo
@@ -7,10 +25,26 @@ __pycache__/
 venv/
 env/
 
+# Biến môi trường & API Keys (Bảo mật tuyệt đối không commit)
+.env
+.flaskenv
+
+# ==========================================
+# 3. IDE & TRÌNH BIÊN DỊCH
+# ==========================================
 .ipynb_checkpoints/
+.vscode/
+.idea/
+
+# ==========================================
+# 4. HỆ ĐIỀU HÀNH
+# ==========================================
 .DS_Store
 Thumbs.db
 
+# ==========================================
+# 5. DỮ LIỆU DATASET (Chỉ giữ cấu trúc thư mục)
+# ==========================================
 data/raw/images/*
 data/raw/labels/*
 !data/raw/images/.gitkeep
@@ -22,7 +56,16 @@ data/interim/crops/*
 data/processed/features/*
 !data/processed/features/.gitkeep
 
+# Bỏ qua các file nén dataset tải về
+*.zip
+*.tar.gz
+*.rar
+
+# ==========================================
+# 6. MÔ HÌNH (Chỉ giữ lại file best model)
+# ==========================================
 models/yolo/*
+!models/yolo/.gitkeep
 !models/yolo/best.pt
 
 models/ml/*
