@@ -72,7 +72,7 @@ Hệ thống được phát triển theo hướng Hybrid AI Pipeline, kết hợ
            |
            v
      Kết quả đầu ra
-  (Ảnh có nhãn + Báo cáo CSV/JSON/TXT/Excel)
+(Ảnh có nhãn + Báo cáo CSV/JSON/TXT/Excel)
 ```
 
 ---
