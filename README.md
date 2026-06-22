@@ -79,66 +79,117 @@ Hệ thống được phát triển theo hướng Hybrid AI Pipeline, kết hợ
 
 ## Phương pháp thực hiện
 
-### 1. Phát hiện tế bào bằng YOLOv8
+### 1. Phát hiện tế bào với YOLOv8
 
-Mô hình YOLOv8 được sử dụng để xác định vị trí các tế bào máu trong ảnh. Đầu ra gồm tọa độ Bounding Box và Confidence Score cho từng tế bào được phát hiện.
+Mô hình YOLOv8 được dùng để phát hiện từng tế bào máu trong ảnh lam. Quá trình xử lý gồm:
 
-Cấu hình mặc định:
+- Tiền xử lý ảnh đầu vào: resize, chuẩn hoá và chuyển đổi định dạng cho phù hợp với mô hình.
+- Chạy YOLOv8 để nhận diện các vùng chứa tế bào.
+- Lọc kết quả bằng confidence threshold và Non-Maximum Suppression (NMS).
+- Sinh ra danh sách bounding box kèm nhãn, độ tin cậy và tọa độ.
 
-| Tham số         | Giá trị | Mô tả                               |
-|-----------------|---------|-------------------------------------|
-| conf_threshold  | 0.08    | Ngưỡng độ tin cậy                   |
-| iou_threshold   | 0.40    | Ngưỡng NMS                          |
-| max_det         | 800     | Số tế bào tối đa phát hiện mỗi ảnh  |
-| imgsz           | 416     | Kích thước ảnh đầu vào              |
+Cấu hình mặc định của pipeline:
 
-### 2. Trích xuất đặc trưng
+| Tham số         | Giá trị | Mô tả                                       |
+|-----------------|---------|---------------------------------------------|
+| conf_threshold  | 0.08    | Ngưỡng chấp nhận phát hiện                   |
+| iou_threshold   | 0.40    | Ngưỡng NMS để loại bỏ các hộp chồng lấp     |
+| max_det         | 800     | Số lượng tế bào tối đa xử lý mỗi ảnh        |
+| imgsz           | 416     | Kích thước ảnh đầu vào sau khi resize       |
 
-Sau khi phát hiện tế bào, từng vùng ảnh được cắt ra và xử lý bằng OpenCV để trích xuất **20 đặc trưng** hình thái học.
+Sau bước này, mỗi tế bào được biểu diễn bằng một vùng ảnh (ROI) sẵn sàng cho bước trích xuất đặc trưng.
+
+### 2. Trích xuất đặc trưng tế bào
+
+Mỗi ROI được xử lý bằng OpenCV và các phép toán hình ảnh để trích lựa các đặc trưng mô tả hình dạng, màu sắc và kết cấu.
+
+Quá trình trích xuất bao gồm:
+
+- Chuyển ROI về không gian màu BGR và HSV.
+- Làm mịn ảnh và áp dụng threshold để tách nền khỏi đối tượng.
+- Xác định contour và tính đa giác bao quanh tế bào.
+- Tạo mask tế bào để tính đặc trưng chỉ trên vùng đối tượng.
+- Tính toán các chỉ số hình học và thống kê màu sắc.
+
+Các đặc trưng được sử dụng bao gồm:
 
 **Nhóm đặc trưng hình dạng (9 đặc trưng)**
 
 | Đặc trưng     | Mô tả                                          |
 |---------------|------------------------------------------------|
 | area          | Diện tích vùng tế bào (pixel²)                 |
-| perimeter     | Chu vi đường viền (pixel)                      |
-| circularity   | Độ tròn (0–1, giá trị 1 là tròn hoàn hảo)     |
-| eccentricity  | Độ lệch tâm, đo mức độ kéo dài của hình dạng  |
-| solidity      | Độ đặc = diện tích / diện tích bao lồi        |
-| extent        | Tỷ lệ diện tích / hình chữ nhật bao quanh     |
-| hu_moment_1   | Mô-men Hu bất biến thứ nhất                   |
-| hu_moment_2   | Mô-men Hu bất biến thứ hai                    |
-| hu_moment_3   | Mô-men Hu bất biến thứ ba                     |
+| perimeter     | Chu vi đường viền tế bào (pixel)               |
+| circularity   | Độ tròn = 4π × area / perimeter²                |
+| eccentricity  | Mức độ kéo dài của hình dạng tế bào             |
+| solidity      | Diện tích / diện tích bao lồi                   |
+| extent        | Tỷ lệ diện tích so với hình chữ nhật bao quanh  |
+| hu_moment_1   | Mô-men Hu bất biến thứ nhất                     |
+| hu_moment_2   | Mô-men Hu bất biến thứ hai                      |
+| hu_moment_3   | Mô-men Hu bất biến thứ ba                       |
 
-**Nhóm đặc trưng màu sắc (7 đặc trưng)**
+**Nhóm đặc trưng màu sắc (6 đặc trưng)**
 
-| Đặc trưng   | Mô tả                                |
-|-------------|--------------------------------------|
-| mean_b/g/r  | Giá trị màu trung bình theo kênh BGR |
-| mean_h/s/v  | Giá trị màu trung bình theo kênh HSV |
+| Đặc trưng   | Mô tả                                      |
+|-------------|--------------------------------------------|
+| mean_b      | Trung bình kênh B trên vùng tế bào          |
+| mean_g      | Trung bình kênh G trên vùng tế bào          |
+| mean_r      | Trung bình kênh R trên vùng tế bào          |
+| mean_h      | Trung bình kênh H trên không gian HSV       |
+| mean_s      | Trung bình kênh S trên không gian HSV       |
+| mean_v      | Trung bình kênh V trên không gian HSV       |
 
 **Nhóm đặc trưng thống kê màu (4 đặc trưng)**
 
-| Đặc trưng        | Mô tả                                 |
-|------------------|---------------------------------------|
-| color_std_b/g/r  | Độ lệch chuẩn màu sắc theo kênh BGR  |
-| color_std_hsv    | Độ lệch chuẩn kênh Hue trong HSV     |
+| Đặc trưng        | Mô tả                                           |
+|------------------|-------------------------------------------------|
+| color_std_b      | Độ lệch chuẩn kênh B                            |
+| color_std_g      | Độ lệch chuẩn kênh G                            |
+| color_std_r      | Độ lệch chuẩn kênh R                            |
+| color_std_hue    | Độ lệch chuẩn kênh Hue                          |
 
 **Nhóm đặc trưng kết cấu (1 đặc trưng)**
 
-| Đặc trưng             | Mô tả                          |
-|-----------------------|--------------------------------|
-| texture_laplacian_var | Phương sai Laplacian (độ sắc)  |
+| Đặc trưng             | Mô tả                                  |
+|-----------------------|----------------------------------------|
+| texture_laplacian_var | Phương sai Laplacian, đo độ sắc nét   |
 
-### 3. Phân loại bằng Machine Learning
+Tất cả đặc trưng được ghép thành feature vector cho mỗi tế bào, làm đầu vào cho bước phân loại.
 
-Các thuật toán được huấn luyện và so sánh:
+### 3. Huấn luyện và phân loại bằng Machine Learning
 
-- Support Vector Machine (SVM) với kernel RBF — thường cho kết quả tốt nhất
-- K-Nearest Neighbors (KNN) với distance weighting
+Bộ dữ liệu đặc trưng được chia thành tập huấn luyện và kiểm thử giữ nguyên tỷ lệ các lớp (stratified split).
+
+Các mô hình ML được so sánh gồm:
+
+- Support Vector Machine (SVM) với kernel RBF
+- K-Nearest Neighbors (KNN) với trọng số khoảng cách
 - Decision Tree với max_depth=10
 
-Mô hình tốt nhất được chọn tự động theo Accuracy trên tập kiểm thử và lưu vào `models/ml/best_ml_model.pt`.
+Quy trình huấn luyện:
+
+- Chuẩn hoá đặc trưng nếu cần.
+- Lựa chọn các đặc trưng quan trọng.
+- Huấn luyện mỗi mô hình trên tập train.
+- Đánh giá bằng accuracy, F1-score và confusion matrix trên tập test.
+- Lưu mô hình tốt nhất vào `models/ml/best_ml_model.pt`.
+
+Các script chính thực thi quy trình này:
+
+- `scripts/build_train_features_from_labels.py` — tạo bảng đặc trưng từ dữ liệu ảnh và nhãn.
+- `scripts/train_ml.py` — huấn luyện và lưu mô hình ML.
+- `scripts/run_ml_pipeline.py` — chạy toàn bộ pipeline trích đặc trưng và huấn luyện.
+
+### 4. Pipeline end-to-end
+
+Pipeline cuối cùng kết hợp cả hai giai đoạn:
+
+1. Phát hiện tế bào bằng YOLOv8.
+2. Trích xuất đặc trưng hình ảnh cho từng ROI.
+3. Dự đoán loại tế bào bằng mô hình ML đã huấn luyện.
+4. Tính toán số lượng và tỷ lệ mỗi loại tế bào.
+5. Xuất báo cáo và ảnh kết quả.
+
+Luồng này giúp tận dụng khả năng phát hiện nhanh của Deep Learning và độ chính xác giải thích được của các mô hình ML cổ điển.
 
 ---
 
