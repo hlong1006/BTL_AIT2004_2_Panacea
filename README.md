@@ -230,6 +230,7 @@ Kết quả được đo trên tập kiểm thử (20% dữ liệu, stratified s
 - Python 3.8 trở lên
 - RAM tối thiểu 8 GB
 - GPU tùy chọn (chỉ cần khi huấn luyện lại YOLO trên Kaggle)
+- Docker & Docker Compose (Tùy chọn, nếu muốn chạy qua Container)
 
 ### Cài đặt môi trường
 
@@ -341,6 +342,40 @@ result = pipeline.run_on_image_full(
 
 print(result.report_text)
 ```
+
+### Bước 3: Chạy hệ thống bằng Docker (Khuyến nghị)
+
+**Khởi động nhanh Web App bằng Docker Compose (Bản CPU)**
+
+```bash
+docker-compose up -d
+# Truy cập http://localhost:5000
+# Để tắt hệ thống: docker-compose down
+```
+
+**Khởi động bản GPU (Yêu cầu có Card Nvidia & NVIDIA Container Toolkit)**
+
+```bash
+docker-compose up -d blood-cell-analyzer-gpu
+```
+
+**Chạy giao diện dòng lệnh (CLI) qua Docker**
+```bash
+# Phân tích một ảnh
+docker run --rm \
+  -v $(pwd)/models:/app/models \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/outputs:/app/outputs \
+  blood-cell-analyzer:latest python app.py --image data/test/images/sample.jpg --output outputs/analysis_results/
+
+# Phân tích hàng loạt thư mục
+docker run --rm \
+  -v $(pwd)/models:/app/models \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/outputs:/app/outputs \
+  blood-cell-analyzer:latest python app.py --folder data/test/images --output outputs/analysis_results/ --recursive
+```
+
 
 ---
 
