@@ -92,10 +92,10 @@ Cấu hình mặc định của pipeline:
 
 | Tham số         | Giá trị | Mô tả                                       |
 |-----------------|---------|---------------------------------------------|
-| conf_threshold  | 0.08    | Ngưỡng chấp nhận phát hiện                   |
-| iou_threshold   | 0.40    | Ngưỡng NMS để loại bỏ các hộp chồng lấp     |
-| max_det         | 800     | Số lượng tế bào tối đa xử lý mỗi ảnh        |
-| imgsz           | 416     | Kích thước ảnh đầu vào sau khi resize       |
+| conf_threshold  | 0.06    | Ngưỡng chấp nhận phát hiện                   |
+| iou_threshold   | 0.45    | Ngưỡng NMS để loại bỏ các hộp chồng lấp     |
+| max_det         | 1000     | Số lượng tế bào tối đa xử lý mỗi ảnh        |
+| imgsz           | 640    | Kích thước ảnh đầu vào sau khi resize       |
 
 Sau bước này, mỗi tế bào được biểu diễn bằng một vùng ảnh (ROI) sẵn sàng cho bước trích xuất đặc trưng.
 
@@ -145,7 +145,7 @@ Các đặc trưng được sử dụng bao gồm:
 | color_std_b      | Độ lệch chuẩn kênh B                            |
 | color_std_g      | Độ lệch chuẩn kênh G                            |
 | color_std_r      | Độ lệch chuẩn kênh R                            |
-| color_std_hue    | Độ lệch chuẩn kênh Hue                          |
+| color_std_hsv    | Độ lệch chuẩn kênh Hue (HSV)                          |
 
 **Nhóm đặc trưng kết cấu (1 đặc trưng)**
 
@@ -371,55 +371,39 @@ Màu bbox trên ảnh kết quả:
 
 ```text
 BTL_AIT2004_2_Panacea/
-|
 |-- app.py                          # Giao diện CLI chính
-|-- web_app.py                      # Giao diện Web (Flask)
+|-- web_app.py                      # Giao diện Web API (Flask)
 |
-|-- src/
-|   |-- detection/
-|   |   `-- yolo_detector.py        # Wrapper YOLOv8: detect, crop, draw
-|   |-- features/
-|   |   `-- extractor.py            # Trích xuất 20 đặc trưng bằng OpenCV
-|   |-- classification/
-|   |   `-- ml_classifier.py        # Train / load / predict KNN, DT, SVM
-|   |-- pipeline/
-|   |   `-- end_to_end.py           # Nối 3 module thành pipeline hoàn chỉnh
-|   |-- config/
-|   |   `-- settings.py             # Quản lý đường dẫn toàn dự án
-|   `-- utils/
-|       |-- statistics.py           # Tính thống kê, sinh báo cáo, cảnh báo
-|       `-- io.py                   # Tiện ích tạo thư mục
+|-- src/                            # LÕI HỆ THỐNG
+|   |-- calibration/                # Ước lượng chỉ số máu (CBC Estimator)
+|   |-- classification/             # Phân loại ML, gợi ý WBC Subtype
+|   |-- config/                     # Cấu hình dự án, đường dẫn
+|   |-- detection/                  # Phát hiện YOLOv8, NMS tùy chỉnh
+|   |-- diagnosis/                  # Chẩn đoán sức khỏe y khoa, phát hiện bất thường
+|   |-- evaluation/                 # Đánh giá Ground Truth, Benchmark
+|   |-- explainability/             # Giải thích quyết định mô hình (Feature Explainer)
+|   |-- features/                   # Rút trích 20 đặc trưng OpenCV (Extractor)
+|   |-- llm/                        # Giải thích ngôn ngữ tự nhiên (Local/OpenAI)
+|   |-- pipeline/                   # Khối điều phối Pipeline End-to-End
+|   |-- reporting/                  # Trình xuất báo cáo PDF (ReportLab)
+|   `-- utils/                      # Tính toán thống kê lâm sàng, I/O
 |
-|-- scripts/
-|   |-- run_ml_pipeline.py          # Gộp build features + train ML
-|   |-- build_train_features_from_labels.py  # Trích đặc trưng từ GT labels
-|   |-- train_ml.py                 # Huấn luyện và lưu ML model
-|   |-- train_yolo.py               # Huấn luyện YOLO (thay thế notebook 02)
-|   |-- infer_image.py              # Inference một ảnh
-|   |-- infer_folder.py             # Inference cả thư mục (batch)
+|-- scripts/                        # CÁC KỊCH BẢN THỰC THI
+|   |-- run_ml_pipeline.py
+|   |-- build_train_features_from_labels.py
+|   |-- train_ml.py
+|   |-- train_yolo.py
+|   |-- infer_image.py
+|   |-- infer_folder.py
 |   |-- generate_crops_from_detections.py
-|   `-- extract_features_from_crops.py
+|   |-- extract_features_from_crops.py
+|   `-- generate_benchmark_report.py
 |
-|-- notebooks/
-|   |-- 02_Train_YOLO_Detection.ipynb     # Train YOLO trên Kaggle GPU
-|   |-- 03_Feature_Extraction.ipynb       # Demo trích xuất đặc trưng
-|   |-- 04_Train_ML_Classification.ipynb  # Train ML, so sánh, confusion matrix
-|   `-- 05_Integration_Pipeline.ipynb     # Demo pipeline end-to-end
-|
-|-- models/
-|   |-- yolo/best.pt                # YOLO weights (train từ Kaggle)
-|   `-- ml/best_ml_model.pt         # ML model tốt nhất
-|
-|-- data/
-|   |-- train/images + labels/
-|   |-- valid/images + labels/
-|   |-- test/images + labels/
-|   |-- interim/crops/              # Crops tạm thời
-|   |-- processed/features/         # train_features.csv
-|   `-- data.yaml                   # Cấu hình dataset cho YOLO
-|
-|-- outputs/                        # Kết quả inference (tự sinh)
-|-- templates/index.html            # Giao diện Web HTML
+|-- notebooks/                      # Jupyter Notebooks nghiên cứu
+|-- models/                         # Lưu trữ trọng số (YOLO & ML)
+|-- data/                           # Dữ liệu ảnh, nhãn, features
+|-- outputs/                        # Kết quả đầu ra tự sinh
+|-- templates/                      # Chứa giao diện index.html
 |-- requirements.txt
 `-- README.md
 ```
@@ -445,39 +429,36 @@ BTL_AIT2004_2_Panacea/
 ## Trạng thái dự án
 
 - Hoàn thành Pipeline End-to-End (YOLO + OpenCV + ML)
-- Hoàn thành giao diện Web v2 (Flask) với biểu đồ Chart.js
+- Hoàn thành giao diện Web SPA với Flask & Chart.js
 - Chẩn đoán sức khỏe máu dựa trên **tỷ lệ %** tế bào
 - Phát hiện tế bào bất thường (Anomaly Detection)
 - Giải thích AI (Permutation Importance / Feature Explanation)
 - So sánh YOLO-only vs Hybrid pipeline
 - Đánh giá Ground Truth (ảnh test set)
 - Ước lượng CBC, WBC subtype heuristic
-- Chế độ Demo, Batch upload, Webcam, Lịch sử
+- Batch upload (phân tích hàng loạt) và xem Lịch sử kết quả
 - Xuất báo cáo PDF
 - Giải thích dễ hiểu (local + tùy chọn OpenAI API)
 - Docker, CLI, Python API, Unit tests
 
 ---
 
-## Tính năng mới (v2)
+## Tính năng nổi bật
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| **Chẩn đoán sức khỏe** | So sánh tỷ lệ RBC/WBC/Platelets với ngưỡng lam máu |
-| **Biểu đồ Web** | Pie chart phân bố + bar chart so ngưỡng bình thường |
-| **Demo mode** | 3 ảnh mẫu sẵn có, phân tích 1 click |
-| **Confidence slider** | Điều chỉnh ngưỡng YOLO trên web |
-| **Batch upload** | Phân tích nhiều ảnh, so sánh tổng hợp |
-| **Webcam** | Chụp frame từ camera và phân tích |
-| **Lịch sử** | Xem lại 20 kết quả gần nhất |
-| **PDF export** | Báo cáo đầy đủ kèm ảnh |
-| **Explainability** | Giải thích đặc trưng quyết định phân loại |
-| **Anomaly detection** | Phát hiện tế bào hình thái bất thường |
-| **Ground Truth** | Precision/Recall/F1 với nhãn test set |
-| **Hybrid compare** | So sánh nhãn YOLO vs ML |
-| **CBC estimate** | Ước lượng nồng độ máu (tham khảo) |
-| **WBC subtype** | Gợi ý loại bạch cầu con (heuristic demo) |
-| **LLM explain** | Đặt `OPENAI_API_KEY` để giải thích bằng GPT |
+| **Chẩn đoán sức khỏe** | Tự động so sánh tỷ lệ RBC/WBC/Platelets với ngưỡng tham chiếu sinh lý |
+| **Giao diện Web Dashboard** | Kéo thả upload, biểu đồ trực quan (Chart.js), điều chỉnh ngưỡng confidence |
+| **Phân tích hàng loạt** | Upload nhiều ảnh cùng lúc, sinh báo cáo tổng hợp (Batch processing) |
+| **Xuất báo cáo PDF** | Báo cáo chuyên nghiệp đầy đủ thông tin, cảnh báo, hình ảnh |
+| **Giải thích AI (XAI)** | Đánh giá tầm quan trọng của từng đặc trưng bằng Permutation Importance |
+| **Phát hiện bất thường** | Phát hiện tế bào có hình thái lệch chuẩn (Z-score > 2.5) |
+| **Kiểm chứng Ground Truth** | So sánh trực tiếp với nhãn thủ công để ra điểm Precision/Recall/F1 |
+| **Ước lượng CBC** | Ước lượng thô nồng độ tế bào máu (cells/µL) dựa trên thông số vi trường |
+| **Gợi ý WBC Subtype** | Sử dụng Heuristic để dự đoán loại bạch cầu con |
+| **Giải thích bằng LLM** | Dịch kết quả chuyên ngành sang ngôn ngữ bình dân (tích hợp OpenAI API) |
+| **So sánh Hybrid** | Báo cáo tỷ lệ đồng thuận giữa YOLO-only và kiến trúc Hybrid |
+
 
 Chạy benchmark cho slide bảo vệ:
 
