@@ -39,6 +39,10 @@ class CellStatistics:
         """Ghi nhận cảnh báo bất thường về phân bố mật độ tế bào theo tiêu chuẩn lâm sàng."""
         if warning not in self.clinical_warnings:
             self.clinical_warnings.append(warning)
+
+    def add_warning(self, warning: str) -> None:
+        """Alias tương thích ngược — ghi vào cảnh báo hệ thống."""
+        self.add_system_warning(warning)
     
     def to_dict(self) -> Dict[str, Any]:
         """Chuyển đổi thực thể sang cấu trúc từ điển (Dictionary).

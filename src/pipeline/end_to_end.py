@@ -169,7 +169,7 @@ class HybridCellPipeline:
         )
         anomalies = self.anomaly_detector.to_dict_list(anomalies_raw)
         if anomalies:
-            stats.add_warning(self.anomaly_detector.summary_text(anomalies_raw)[:200])
+            stats.add_system_warning(self.anomaly_detector.summary_text(anomalies_raw)[:200])
 
         explanation = None
         global_importance = None

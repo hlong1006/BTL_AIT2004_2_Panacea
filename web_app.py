@@ -2,19 +2,15 @@
 """Ứng dụng Web Phát hiện & Phân loại Tế bào Máu — Panacea v2."""
 
 import json
-import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import cv2
-import numpy as np
 from flask import Flask, jsonify, render_template, request, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-from src.classification.ml_classifier import MLClassifier
 from src.config.settings import PATHS
 from src.pipeline.end_to_end import HybridCellPipeline
 
@@ -26,13 +22,11 @@ CORS(app)
 
 UPLOAD_FOLDER = Path(__file__).parent / "uploads"
 RESULTS_FOLDER = Path(__file__).parent / "results"
-DEMO_FOLDER = PATHS.demo_images
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "bmp"}
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 RESULTS_FOLDER.mkdir(exist_ok=True)
-DEMO_FOLDER.mkdir(parents=True, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
@@ -121,36 +115,8 @@ def analyze_image_file(filepath: Path, output_dir: Path, conf: float = 0.06, ml_
         return {"success": False, "error": str(exc)}
 
 
-def _load_demo_manifest():
-    manifest_path = DEMO_FOLDER / "manifest.json"
-    if manifest_path.exists():
-        return json.loads(manifest_path.read_text(encoding="utf-8"))
-    return {"samples": []}
-
-
-def _ensure_demo_images():
-    manifest_path = DEMO_FOLDER / "manifest.json"
-    if manifest_path.exists():
-        return
-    samples = [
-        ("demo_normal.jpg", "BloodImage_00038_jpg.rf.ffa23e4b5b55b523367f332af726eae8.jpg", "Mẫu bình thường", "Tỷ lệ tế bào cân bằng"),
-        ("demo_high_wbc.jpg", "BloodImage_00337_jpg.rf.b6cb228440b9158cafec01a0351e3aad.jpg", "Nhiều bạch cầu", "Có thể gợi ý tăng WBC"),
-        ("demo_sparse.jpg", "BloodImage_00099_jpg.rf.e3c42cd68359527494a53843479dff5c.jpg", "Mẫu thưa tế bào", "Ít tế bào trong field"),
-    ]
-    demo_samples = []
-    for demo_name, src_name, title, desc in samples:
-        src = PATHS.test_images / src_name
-        dst = DEMO_FOLDER / demo_name
-        if src.exists() and not dst.exists():
-            shutil.copy2(src, dst)
-        if dst.exists():
-            demo_samples.append({"id": demo_name.replace(".jpg", ""), "file": demo_name, "title": title, "description": desc})
-    manifest_path.write_text(json.dumps({"samples": demo_samples}, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
 @app.route("/")
 def index():
-    _ensure_demo_images()
     return render_template("index.html", models_loaded=MODELS_LOADED)
 
 
@@ -166,42 +132,12 @@ def system_info():
         "system": "Panacea Blood Cell Analyzer v2",
         "version": "2.0.0",
         "features": [
-            "hybrid_pipeline", "health_diagnosis", "anomaly_detection",
-            "explainability", "cbc_estimate", "ground_truth", "batch_upload",
-            "demo_mode", "pdf_export", "webcam", "wbc_subtype_heuristic",
+            "health_diagnosis", "anomaly_detection", "cbc_estimate",
+            "ground_truth", "batch_upload", "pdf_export",
         ],
         "models": {"yolo": "best.pt", "ml": "best_ml_model.pt"},
         "classes": {"0": "Platelets", "1": "RBC", "2": "WBC"},
     })
-
-
-@app.route("/api/demo/samples")
-def demo_samples():
-    _ensure_demo_images()
-    return jsonify({"success": True, "samples": _load_demo_manifest().get("samples", [])})
-
-
-@app.route("/api/demo/run/<sample_id>", methods=["POST"])
-def run_demo(sample_id):
-    if not MODELS_LOADED:
-        return jsonify({"success": False, "error": "Models chưa tải."}), 503
-    _ensure_demo_images()
-    conf = float(request.json.get("conf", 0.06)) if request.is_json else 0.06
-    for s in _load_demo_manifest().get("samples", []):
-        if s["id"] == sample_id:
-            src = DEMO_FOLDER / s["file"]
-            if not src.exists():
-                return jsonify({"success": False, "error": "File demo không tồn tại."}), 404
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S_")
-            dst = UPLOAD_FOLDER / f"{ts}demo_{s['file']}"
-            shutil.copy2(src, dst)
-            out = RESULTS_FOLDER / dst.stem
-            out.mkdir(parents=True, exist_ok=True)
-            result = analyze_image_file(dst, out, conf=conf)
-            result["demo_id"] = sample_id
-            result["demo_title"] = s.get("title", "")
-            return jsonify(result)
-    return jsonify({"success": False, "error": "Không tìm thấy mẫu demo."}), 404
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -268,22 +204,6 @@ def _batch_comparison(ok_results):
     return {"aggregate_counts": totals, "images": len(ok_results)}
 
 
-@app.route("/api/analyze-frame", methods=["POST"])
-def analyze_frame():
-    if not MODELS_LOADED:
-        return jsonify({"success": False, "error": "Models chưa tải."}), 503
-    if "file" not in request.files:
-        return jsonify({"success": False, "error": "Không có frame."}), 400
-    file = request.files["file"]
-    conf = float(request.form.get("conf", 0.06))
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S_")
-    filepath = UPLOAD_FOLDER / f"{ts}webcam_frame.jpg"
-    file.save(str(filepath))
-    output_dir = RESULTS_FOLDER / filepath.stem
-    output_dir.mkdir(parents=True, exist_ok=True)
-    return jsonify(analyze_image_file(filepath, output_dir, conf=conf))
-
-
 @app.route("/api/results")
 def get_results():
     try:
@@ -322,17 +242,8 @@ def serve_upload(filename):
     return "Not found", 404
 
 
-@app.route("/demo/<path:filename>")
-def serve_demo(filename):
-    fp = DEMO_FOLDER / filename
-    if fp.exists():
-        return send_file(str(fp))
-    return "Not found", 404
-
-
 if __name__ == "__main__":
-    _ensure_demo_images()
     print("=" * 60)
-    print(" Panacea Web v2 — http://localhost:5000")
+    print(" Panacea Web — http://localhost:5000")
     print("=" * 60)
     app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=False)
