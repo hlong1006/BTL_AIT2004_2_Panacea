@@ -430,7 +430,7 @@ BTL_AIT2004_2_Panacea/
 |   |-- llm/                        # Giải thích ngôn ngữ tự nhiên (Local / OpenAI API)
 |   |-- pipeline/                   # Điều phối Pipeline End-to-End
 |   |-- reporting/                  # Xuất báo cáo PDF (ReportLab)
-|   `-- utils/                      # Thống kê lâm sàng, I/O
+|   |-- utils/                      # Thống kê lâm sàng, I/O
 |
 |-- scripts/                        # CÁC KỊCH BẢN THỰC THI
 |   |-- run_ml_pipeline.py
@@ -441,7 +441,7 @@ BTL_AIT2004_2_Panacea/
 |   |-- infer_folder.py
 |   |-- generate_crops_from_detections.py
 |   |-- extract_features_from_crops.py
-|   `-- generate_benchmark_report.py
+|   |-- generate_benchmark_report.py
 |
 |-- notebooks/                      # Jupyter Notebooks nghiên cứu
 |-- models/                         # Lưu trữ trọng số (YOLO & ML)
@@ -452,7 +452,7 @@ BTL_AIT2004_2_Panacea/
 |-- Dockerfile.gpu                  # Container GPU (CUDA)
 |-- docker-compose.yml
 |-- requirements.txt
-`-- README.md
+|-- README.md
 ```
 
 ---
