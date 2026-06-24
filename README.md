@@ -194,13 +194,6 @@ Kết quả được đo trên tập kiểm thử (20% dữ liệu, stratified s
 
 > Lưu ý: Accuracy chính xác phụ thuộc vào chất lượng YOLO model và bộ dữ liệu. Chạy `python scripts/train_ml.py` để xem kết quả thực tế kèm confusion matrix.
 
-### Tốc độ xử lý
-
-| Thành phần         | Thời gian           |
-|--------------------|---------------------|
-| YOLO Detection     | 50 – 100 ms / ảnh   |
-| Feature Extraction | 10 – 20 ms / tế bào |
-| ML Classification  | 1 – 2 ms / tế bào   |
 
 ---
 
