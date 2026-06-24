@@ -344,7 +344,7 @@ print(result.health_report.to_text())
 **Khởi động Web App bằng Docker Compose (bản CPU)**
 
 ```bash
-docker-compose up -d
+docker compose up -d
 # Truy cập http://localhost:5000
 # Để tắt: docker-compose down
 ```
@@ -353,7 +353,7 @@ docker-compose up -d
 
 ```bash
 # Lưu ý: service GPU có profile riêng, phải dùng flag --profile
-docker-compose --profile gpu up -d
+docker compose --profile gpu up -d
 ```
 
 **Chạy CLI qua Docker**
