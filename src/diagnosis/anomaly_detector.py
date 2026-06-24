@@ -87,12 +87,14 @@ class AnomalyDetector:
     def summary_text(self, anomalies: List[CellAnomaly]) -> str:
         if not anomalies:
             return "Không phát hiện tế bào hình thái bất thường."
+        
         lines = [f"Phát hiện {len(anomalies)} tế bào hình thái bất thường:"]
-        for a in anomalies[:5]:
+        
+        # Liệt kê toàn bộ danh sách một cách sạch sẽ, dùng gạch đầu dòng
+        for a in anomalies:
             lines.append(
-                f"  • Tế bào #{a.cell_index} ({a.predicted_label}): "
-                f"điểm bất thường {a.anomaly_score:.1f} — {'; '.join(a.reasons[:2])}"
+                f"  - Tế bào #{a.cell_index} ({a.predicted_label}): "
+                f"điểm lệch {a.anomaly_score:.1f}σ — {'; '.join(a.reasons[:2])}"
             )
-        if len(anomalies) > 5:
-            lines.append(f"  ... và {len(anomalies) - 5} tế bào khác")
+            
         return "\n".join(lines)

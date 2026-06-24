@@ -756,10 +756,13 @@ function formatWBCSubtypes(subtypes) {
 
 function formatFullReport(text, data) {
     let html = '';
+    
+    // Phần 1: Giữ nguyên biểu đồ thanh phân bổ tế bào (đã làm rất tốt và trực quan)
     if (data?.cell_counts) {
-        html += '<div class="report-block"><div class="report-block-title">Phân bổ tế bào</div>';
+        html += '<div class="report-block"><div class="card-title" style="font-size:1rem;margin-bottom:14px;">Phân bổ tế bào</div>';
         const total = data.total_cells || 1;
         const colors = { RBC: 'rbc', WBC: 'wbc', Platelets: 'platelets' };
+        
         for (const [type, count] of Object.entries(data.cell_counts)) {
             const pct = ((count / total) * 100).toFixed(1);
             html += `<div class="cell-bar-row">
@@ -773,30 +776,19 @@ function formatFullReport(text, data) {
         }
         html += '</div>';
     }
+    
+    // Phần 2: Đưa phần chi tiết báo cáo về dạng văn bản thuần túy (Plain text) 
+    // sử dụng thẻ <pre> giúp hiển thị ngay ngắn, thụt lề chuẩn mà không bị CSS web bóp méo
     if (text) {
-        const lines = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('='));
-        html += '<div class="report-block"><div class="report-block-title">Chi tiết báo cáo</div><div class="prose">';
-        let inList = false;
-        for (const line of lines) {
-            const t = line.trim();
-            if (t.startsWith('!') || t.startsWith('✓')) continue;
-            if (t.match(/^-{3,}/) || t.match(/TÓM TẮT|CẢNH BÁO|ĐẶC TRƯNG/i)) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<p class="lead" style="font-size:0.85rem;margin-top:12px;">${esc(t.replace(/^-+|-+$/g,''))}</p>`;
-            } else if (t.match(/^\d+\./)) {
-                if (!inList) { html += '<ul>'; inList = true; }
-                html += `<li>${esc(t)}</li>`;
-            } else if (t.includes('|') && t.includes('█')) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<p style="font-family:monospace;font-size:0.82rem;color:var(--text-muted);">${esc(t)}</p>`;
-            } else {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<p>${esc(t)}</p>`;
-            }
-        }
-        if (inList) html += '</ul>';
-        html += '</div></div>';
+        // Lọc bỏ bớt các ký tự phân tách hoặc đánh dấu Markdown thô
+        const cleanText = text.replace(/^[✓!*~#\-=|]+|[-=]{3,}/gm, '').trim();
+        
+        html += `<div class="report-block" style="margin-top:20px;">
+            <div class="card-title" style="font-size:1rem;margin-bottom:14px;">Chi tiết báo cáo</div>
+            <pre style="font-family: 'Inter', sans-serif; white-space: pre-wrap; font-size: 0.92rem; color: var(--text); background: var(--surface-2); padding:20px; border-radius:10px; border:1px solid var(--border);">${esc(cleanText)}</pre>
+        </div>`;
     }
+    
     return html || '<p class="note">Không có báo cáo.</p>';
 }
 

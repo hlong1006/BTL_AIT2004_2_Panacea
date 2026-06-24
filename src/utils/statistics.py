@@ -163,97 +163,85 @@ class StatisticsCalculator:
             # --- Khối logic đánh giá dòng Tiểu cầu (Platelets) ---
             if plt_count == 0:
                 stats.add_clinical_warning(
-                    f"Giảm tiểu cầu nghiêm trọng (Mức độ Nặng): Tỷ lệ PLT:RBC = 0:{rbc_count} (0.0%). "
-                    f"Ngưỡng sinh lý tham chiếu tiêu chuẩn ~ 1:20. Nguy cơ xuất huyết cao. "
+                    f"Giảm tiểu cầu nghiêm trọng (Mức độ Nặng): Tỷ lệ RBC = 0/{rbc_count} (0.0%). "
+                    f"Ngưỡng sinh lý tham chiếu tiêu chuẩn ~ 1/20. Nguy cơ xuất huyết cao. "
                     f"Khuyến nghị: Chỉ định kiểm tra tế bào học dòng tiểu cầu bằng máy đếm laser (CBC)."
                 )
             elif plt_to_rbc_ratio < 0.025:
                 stats.add_clinical_warning(
-                    f"Giảm tiểu cầu (Theo dõi sinh lý): Tỷ lệ PLT:RBC hiện tại là {plt_count}:{rbc_count} ({plt_to_rbc_ratio*100:.1f}%). "
+                    f"Giảm tiểu cầu (Theo dõi sinh lý): Tỷ lệ RBC hiện tại là {plt_count}/{rbc_count} ({plt_to_rbc_ratio*100:.1f}%). "
                     f"Dưới ngưỡng phân bố sinh lý trung bình (~ 5%). Cần đối chiếu thêm trên các vi trường lân cận."
                 )
             elif plt_to_rbc_ratio > 0.2:
                 stats.add_clinical_warning(
-                    f"Tăng tiểu cầu bất thường: Tỷ lệ PLT:RBC tăng cao ({plt_to_rbc_ratio*100:.1f}%). "
+                    f"Tăng tiểu cầu bất thường: Tỷ lệ PLT/RBC tăng cao ({plt_to_rbc_ratio*100:.1f}%). "
                     f"Dấu hiệu cảnh báo phản ứng viêm cấp tính hoặc hội chứng tăng sinh tủy xương."
                 )
                 
             # --- Khối logic đánh giá dòng Bạch cầu (WBC) ---
             if wbc_to_rbc_ratio > 0.05:
                 stats.add_clinical_warning(
-                    f"Tăng bạch cầu bệnh lý (Leukocytosis): Tỷ lệ WBC:RBC đạt mức báo động {wbc_count}:{rbc_count}. "
+                    f"Tăng bạch cầu bệnh lý (Leukocytosis): Tỷ lệ WBC/RBC đạt mức báo động {wbc_count}/{rbc_count}. "
                     f"Mật độ bạch cầu quá dày đặc trên một trường hiển vi, phản ánh phản ứng nhiễm trùng cấp hoặc bệnh lý ác tính hệ tạo máu."
                 )
             elif wbc_count > 0 and wbc_to_rbc_ratio > 0.02:
                 stats.add_clinical_warning(
                     f"Theo dõi động học Bạch cầu: Phát hiện mật độ WBC cao hơn phân bố sinh lý thông thường "
-                    f"trên vi trường khảo sát (Tỷ lệ {wbc_count}:{rbc_count})."
+                    f"trên vi trường khảo sát (Tỷ lệ {wbc_count}/{rbc_count})."
                 )
         else:
             stats.add_system_warning("Không tìm thấy Hồng cầu (RBC). Hệ thống mất điểm quy chiếu nền để tính toán chỉ số lâm sàng.")
 
     @staticmethod
+    @staticmethod
+    @staticmethod
     def generate_report_text(stats: CellStatistics, image_name: str = "Blood Sample") -> str:
-        """Sinh tài liệu báo cáo phân tích định dạng văn bản chuẩn hóa.
-        
-        Tích hợp đầy đủ các phần biểu đồ phân bố, số liệu hình thái học trung bình,
-        phân hệ kết luận lâm sàng và thông báo miễn trừ trách nhiệm y khoa.
-        """
+        """Sinh tài liệu báo cáo dạng văn bản khối (Block text) chống vỡ layout trên Web UI."""
         report = []
-        report.append("=" * 70)
-        report.append("BÁO CÁO PHÂN TÍCH HÌNH THÁI TẾ BÀO MÁU (HYBRID AI PIPELINE)")
-        report.append("=" * 70)
-        report.append(f"\nTên tệp mẫu: {image_name}")
-        report.append(f"Tổng số phần tử nhận diện: {stats.total_cells}")
         
-        report.append("\n" + "-" * 70)
-        report.append("TẦN SUẤT PHÂN BỐ CÁC DÒNG TẾ BÀO")
-        report.append("-" * 70)
+        report.append("BÁO CÁO PHÂN TÍCH HÌNH THÁI TẾ BÀO MÁU (HYBRID AI PIPELINE)")
+        report.append(f"Tệp mẫu: {image_name}")
+        report.append(f"Tổng số phần tử nhận diện: {stats.total_cells}")
+        report.append("") # Dòng trống để cách đoạn
+        
+        # 1. Tần suất phân bố
+        report.append("[PHẦN 1] TẦN SUẤT PHÂN BỐ CÁC DÒNG TẾ BÀO")
         sorted_cells = sorted(stats.cell_counts.items(), key=lambda x: x[1], reverse=True)
         for cell_type, count in sorted_cells:
             percentage = stats.cell_percentages.get(cell_type, 0.0)
-            bar_length = int(percentage / 2)
-            bar = "█" * bar_length + "░" * (50 - bar_length)
-            report.append(f"{cell_type:12} | {count:4d} | {percentage:6.2f}% | {bar}")
+            report.append(f" • Dòng {cell_type}: {count} tế bào (Chiếm {percentage:.2f}%)")
+        report.append("")
             
-        # Trực quan hóa số liệu trích xuất đặc trưng hình thái
+        # 2. Đặc trưng hình thái
         if stats.feature_stats:
-            report.append("\n" + "-" * 70)
-            report.append("ĐẶC TRƯNG HÌNH THÁI HỌC TRUNG BÌNH (OpenCV Extraction)")
-            report.append("-" * 70)
+            report.append("[PHẦN 2] ĐẶC TRƯNG HÌNH THÁI HỌC TRUNG BÌNH (OpenCV Extraction)")
             for cell_type, features in stats.feature_stats.items():
-                report.append(f"\n[{cell_type}]")
-                report.append(f"  • Diện tích trung bình (Area):         {features.get('avg_area', 0):.2f} px²")
-                report.append(f"  • Độ tròn trung bình (Circularity):   {features.get('avg_circularity', 0):.4f}")
+                report.append(f"Loại tế bào: {cell_type}")
+                report.append(f" • Diện tích trung bình: {features.get('avg_area', 0):.2f} px²")
+                report.append(f" • Độ tròn trung bình:   {features.get('avg_circularity', 0):.4f}")
+            report.append("")
         
-        # Hiển thị phân hệ chẩn đoán logic lâm sàng
-        report.append("\n" + "!" * 70)
-        report.append("KẾT LUẬN LÂM SÀNG SƠ BỘ (CLINICAL FINDINGS)")
-        report.append("!" * 70)
+        # 3. Kết luận lâm sàng
+        report.append("[PHẦN 3] KẾT LUẬN LÂM SÀNG SƠ BỘ")
         if stats.clinical_warnings:
             for i, warning in enumerate(stats.clinical_warnings, 1):
-                report.append(f" 🩺 {i}. {warning}")
+                # Dùng chữ "Cảnh báo 01:" thay vì "1." để tránh bị UI tự thụt lề
+                report.append(f"Cảnh báo {i}: {warning}")
         else:
-            report.append(" ✓ Các chỉ số phân bố dòng tế bào trên vi trường này nằm trong giới hạn sinh lý bình thường.")
+            report.append("Trạng thái: Các chỉ số phân bố dòng tế bào nằm trong giới hạn sinh lý bình thường.")
+        report.append("")
 
-        # Hiển thị phân hệ cảnh báo chất lượng thuật toán và kỹ thuật ảnh
+        # 4. Đánh giá hệ thống
         if stats.system_warnings:
-            report.append("\n" + "⚙️" * 35)
-            report.append("ĐÁNH GIÁ CHẤT LƯỢNG KỸ THUẬT TIÊU BẢN (SYSTEM ALERTS)")
-            report.append("⚙️" * 35)
+            report.append("[PHẦN 4] ĐÁNH GIÁ CHẤT LƯỢNG KỸ THUẬT TIÊU BẢN")
             for i, warning in enumerate(stats.system_warnings, 1):
-                report.append(f" ⚠️ {i}. {warning}")
+                # Dùng chữ "Lưu ý 01:" thay vì "1."
+                report.append(f"Lưu ý {i}: {warning}")
+            report.append("")
                 
-        # THÊM ĐOẠN NÀY: Khối thông báo cấu trúc và miễn trừ trách nhiệm pháp lý y tế
-        report.append("\n" + "=" * 70)
-        report.append("LƯU Ý HỆ THỐNG / DISCLAIMER:")
-        report.append("Hệ thống hiện đang hoạt động ở giai đoạn thử nghiệm thuật toán (Proof of Concept).")
-        report.append("Các biểu hiện lâm sàng được suy luận tự động thông qua hệ chuyên gia dựa trên")
-        report.append("quy tắc tương quan mật độ hình ảnh, chỉ có ý nghĩa hỗ trợ nghiên cứu viên.")
-        report.append("Kết quả này KHÔNG THAY THẾ cho các quyết định chẩn đoán lâm sàng của bác sĩ.")
-        report.append("Vui lòng đối chiếu với dữ liệu tổng phân tích tế bào máu ngoại vi thu được từ")
-        report.append("hệ thống máy đếm tổng trở hoặc máy đếm laser chuyên dụng.")
-        report.append("=" * 70)
+        # Disclaimer
+        report.append("[LƯU Ý HỆ THỐNG / DISCLAIMER]")
+        report.append("Hệ thống hiện đang hoạt động ở giai đoạn thử nghiệm thuật toán (Proof of Concept). Các biểu hiện lâm sàng được suy luận tự động, chỉ có ý nghĩa hỗ trợ nghiên cứu viên. Kết quả này KHÔNG THAY THẾ cho quyết định chẩn đoán lâm sàng của bác sĩ.")
         
         return "\n".join(report)
 
